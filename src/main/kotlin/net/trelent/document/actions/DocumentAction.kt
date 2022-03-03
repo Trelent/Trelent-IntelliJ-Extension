@@ -1,6 +1,5 @@
 package net.trelent.document.actions
 
-import com.intellij.internal.statistic.DeviceIdManager
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
@@ -24,11 +23,12 @@ import net.trelent.document.helpers.SUPPORTED_LANGUAGES
 
 
 class DocumentAction : AnAction() {
+
     override fun update(e: AnActionEvent) {
         // Using the event, evaluate the context, and enable or disable the action.
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
+
     override fun actionPerformed(@NotNull e: AnActionEvent) {
 
         // Get the open project and editor, if there is one
@@ -49,8 +49,8 @@ class DocumentAction : AnAction() {
         println(file.fileType.displayName)
         val language = if (file.extension == "py") "python" else file.fileType.displayName.lowercase()
 
-        // Get a unique identifier for this machine
-        val userId = DeviceIdManager.getOrGenerateId()
+        // Get a user id for the user on this machine
+        val userId = System.getProperty("user.name")
 
         // Check if this is a supported language
         if(!SUPPORTED_LANGUAGES.contains(language))
@@ -59,7 +59,7 @@ class DocumentAction : AnAction() {
             return
         }
 
-        val task = object : Task.Backgroundable(project, "Writing Docstring") {
+        val task = object : Task.Backgroundable(project, "Writing docstring") {
             override fun run(indicator: ProgressIndicator) {
                 indicator.text = "Writing docstring..."
                 indicator.isIndeterminate = true
@@ -76,13 +76,8 @@ class DocumentAction : AnAction() {
 
                 // We got the current function!
                 val funcName   = currentFunction.name
-                var funcParams = currentFunction.params
+                val funcParams = currentFunction.params
                 val funcText   = currentFunction.text
-
-                if(funcParams == null)
-                {
-                    funcParams = arrayOf<String>()
-                }
 
                 // Request a docstring
                 val docstring = getDocstring(
@@ -105,7 +100,6 @@ class DocumentAction : AnAction() {
                 val docStringLine = docStringPoint[0]
                 val docStringColumn = docStringPoint[1]
                 var docStringPosition = document.getLineStartOffset(docStringLine)
-                var docstringText = ""
 
                 // Does this line contain anything other than whitespace
                 val lineContent = getLine(document, docStringLine)
@@ -118,7 +112,7 @@ class DocumentAction : AnAction() {
                     }
                 }
 
-                docstringText = if(language == "python") {
+                val docstringText = if(language == "python") {
                     docstring.docstring.prependIndent(" ".repeat(docStringColumn)) + "\n"
                 } else {
                     "\n" + docstring.docstring.prependIndent(" ".repeat(docStringColumn))
@@ -154,7 +148,7 @@ class DocumentAction : AnAction() {
     fun showError(message: String)
     {
         val errNotification = Notification(
-            "Trelent",
+            "Trelent Error Notification Group",
             "Error writing docstring",
             message,
             NotificationType.ERROR
