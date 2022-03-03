@@ -1,4 +1,4 @@
-package com.github.calumbird.trelentintellijextension
+package net.trelent.document
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.NonNls

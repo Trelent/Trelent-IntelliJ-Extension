@@ -1,7 +1,7 @@
-package com.github.calumbird.trelentintellijextension.services
+package net.trelent.document.services
 
 import com.intellij.openapi.project.Project
-import com.github.calumbird.trelentintellijextension.MyBundle
+import net.trelent.document.MyBundle
 
 class MyProjectService(project: Project) {
 
