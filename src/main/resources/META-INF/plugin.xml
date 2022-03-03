@@ -16,6 +16,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="net.trelent.document.services.MyApplicationService"/>
+        <notificationGroup id="Trelent Error Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <projectService serviceImplementation="net.trelent.document.services.MyProjectService"/>
     </extensions>
 
@@ -30,7 +31,7 @@
                 description="Write a docstring using Trelent."
                 icon="TrelentPluginIcons.DocumentActionIcon"
         >
-            <add-to-group group-id="EditorPopupMenu" anchor="after"/>
+            <add-to-group group-id="EditorPopupMenu"/>
             <keyboard-shortcut keymap="$default" first-keystroke="alt D"/>
         </action>
     </actions>
