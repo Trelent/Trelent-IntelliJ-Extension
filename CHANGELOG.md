@@ -1,6 +1,4 @@
-<!-- Keep a Changelog guide -> https://keepachangelog.com -->
-
-# Trelent-IntelliJ-Extension Changelog
+# Trelent IntelliJ Plugin Changelog
 
 ## [Unreleased]
 ### Added
