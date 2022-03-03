@@ -154,7 +154,7 @@ class DocumentAction : AnAction() {
     fun showError(message: String)
     {
         val errNotification = Notification(
-            "Trelent Error",
+            "Trelent",
             "Error writing docstring",
             message,
             NotificationType.ERROR
