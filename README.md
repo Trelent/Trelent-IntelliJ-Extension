@@ -3,6 +3,7 @@
 ![Size](https://img.shields.io/github/languages/code-size/Trelent/Trelent-VSCode-Extension)
 [![discord](https://img.shields.io/discord/832745466747420682?logo=Discord&logoColor=white)](https://discord.gg/3gWUdP8EeC)
 <!-- Plugin description -->
+Use Trelent to write documentation for your functions instantly.
 
 Documentation sucks. Let us take care of it! Just click anywhere in your function and press `Alt + D` (`⌥ + D` on Mac).
 

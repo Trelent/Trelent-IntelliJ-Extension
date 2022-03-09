@@ -45,8 +45,6 @@ class DocumentAction : AnAction() {
         val cursor: Caret = editor.caretModel.currentCaret
         val sourceCode = document.text
         val file = FileEditorManager.getInstance(project).selectedFiles[0]
-        println(file.fileType.name)
-        println(file.fileType.displayName)
         val language = if (file.extension == "py") "python" else file.fileType.displayName.lowercase()
 
         // Get a user id for the user on this machine
