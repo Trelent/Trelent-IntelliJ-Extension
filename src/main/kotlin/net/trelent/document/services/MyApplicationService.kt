@@ -5,6 +5,6 @@ import net.trelent.document.MyBundle
 class MyApplicationService {
 
     init {
-        println(MyBundle.message("applicationService"))
+        //println(MyBundle.message("applicationService"))
     }
 }

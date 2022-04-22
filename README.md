@@ -2,14 +2,15 @@
 ![Ratings](https://img.shields.io/visual-studio-marketplace/r/Trelent.trelent)
 ![Size](https://img.shields.io/github/languages/code-size/Trelent/Trelent-VSCode-Extension)
 [![discord](https://img.shields.io/discord/832745466747420682?logo=Discord&logoColor=white)](https://discord.gg/3gWUdP8EeC)
-<!-- Plugin description -->
-Use Trelent to write documentation for your functions instantly.
 
 Documentation sucks. Let us take care of it! Just click anywhere in your function and press `Alt + D` (`⌥ + D` on Mac).
 
 Trelent uses AI to write documentation for your functions instantly.
 
 ![Trelent writing an example docstring](images/trelent-example.gif)
+
+<!-- Plugin description -->
+Use Trelent to write documentation for your functions instantly.
 
 ### Supported Languages
 Trelent currently supports C#, Java, JavaScript and Python docstrings. We default to the standard formats in each language (XML, JavaDoc, JSDoc, and ReST respectively). Support for additional docstring formats and languages is on our roadmap.

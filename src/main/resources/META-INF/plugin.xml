@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>net.trelent.document</id>
     <name>Trelent - AI Docstrings on Demand</name>
-    <version>1.3.1</version>
+    <version>1.4.0</version>
     <vendor email="contact@trelent.net" url="https://trelent.net">Trelent</vendor>
     <description>
         <![CDATA[
@@ -15,24 +15,54 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable
+                parentId="tools"
+                instance="net.trelent.document.settings.TrelentSettingsConfigurable"
+                id="net.trelent.document.settings.TrelentSettingsConfigurable"
+                displayName="Trelent Settings"
+        />
         <applicationService serviceImplementation="net.trelent.document.services.MyApplicationService"/>
+        <applicationService serviceImplementation="net.trelent.document.settings.TrelentSettingsState"/>
         <notificationGroup id="Trelent Error Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <projectService serviceImplementation="net.trelent.document.services.MyProjectService"/>
+
     </extensions>
 
     <applicationListeners>
         <listener class="net.trelent.document.listeners.MyProjectManagerListener"
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </applicationListeners>
+
     <actions>
-        <action id="net.trelent.document.actions.DocumentAction"
-                class="net.trelent.document.actions.DocumentAction"
-                text="Write Docstring"
-                description="Write a docstring using Trelent."
-                icon="TrelentPluginIcons.DocumentActionIcon"
-        >
-            <add-to-group group-id="EditorPopupMenu"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="alt D"/>
-        </action>
+        <group id="TrelentGroup" text="Trelent" popup="true">
+            <action id="net.trelent.document.actions.DocumentAction"
+                    class="net.trelent.document.actions.DocumentAction"
+                    text="Write Docstring"
+                    description="Write a docstring using Trelent."
+                    icon="TrelentPluginIcons.DocumentActionIcon"
+            >
+                <add-to-group group-id="EditorPopupMenu"/>
+                <keyboard-shortcut keymap="$default" first-keystroke="alt D"/>
+            </action>
+            <action id="net.trelent.document.actions.LoginAction"
+                    class="net.trelent.document.actions.LoginAction"
+                    text="Login to Trelent"
+                    description="Login to Trelent."
+                    icon="TrelentPluginIcons.DocumentActionIcon"
+            />
+            <action id="net.trelent.document.actions.LogoutAction"
+                    class="net.trelent.document.actions.LogoutAction"
+                    text="Logout from Trelent"
+                    description="Logout from Trelent."
+                    icon="TrelentPluginIcons.DocumentActionIcon"
+            />
+            <action id="net.trelent.document.actions.SignupAction"
+                    class="net.trelent.document.actions.SignupAction"
+                    text="Signup for Trelent"
+                    description="Signup for Trelent."
+                    icon="TrelentPluginIcons.DocumentActionIcon"
+            />
+            <add-to-group group-id="ToolsMenu"/>
+        </group>
     </actions>
 </idea-plugin>
