@@ -13,7 +13,7 @@ Trelent uses AI to write documentation for your functions instantly.
 Use Trelent to write documentation for your functions instantly.
 
 ### Supported Languages
-Trelent currently supports C#, Java, JavaScript and Python docstrings. We default to the standard formats in each language (XML, JavaDoc, JSDoc, and ReST respectively). Support for additional docstring formats and languages is on our roadmap.
+Trelent currently supports C#, Java, JavaScript and Python docstrings. We default to the standard formats in each language (XML, JavaDoc, JSDoc, and ReST respectively). Support for additional docstring formats include Google and Numpy styles for Python (configured in Settings -> Tools -> Trelent Settings.
 
 If you have any other suggestions we would love to hear from you at [contact@trelent.net](mailto:contact@trelent.net)!
 

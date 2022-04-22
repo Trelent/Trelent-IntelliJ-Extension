@@ -16,11 +16,11 @@ import org.jetbrains.annotations.Nullable
 val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python")
 private const val PARSE_CURRENT_FUNCTION_URL = "https://lambda.trelent.net/api/v4/ParseCurrent/ParseCurrentFunction"
 private const val PARSE_FUNCTIONS_URL        = "https://lambda.trelent.net/api/v4/ParseAll/ParseSourceCode"
-private const val WRITE_DOCSTRING_URL        = "https://dev-api.trelent.net/docs/docstring"
+private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
 
-const val LOGIN_URL = "https://dev-api.trelent.net/auth/login?mode=login"
-const val LOGOUT_URL = "https://dev-api.trelent.net/auth/logout"
-const val SIGNUP_URL = "https://dev-api.trelent.net/auth/login?mode=signup"
+const val LOGIN_URL = "https://prod-api.trelent.net/auth/login?mode=login"
+const val LOGOUT_URL = "https://prod-api.trelent.net/auth/logout"
+const val SIGNUP_URL = "https://prod-api.trelent.net/auth/login?mode=signup"
 
 data class FunctionRequest(
     val function_code: String,
