@@ -1,11 +1,11 @@
-package net.trelent.document.actions
+package net.trelent.document.actions.notifications
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import net.trelent.document.helpers.AuthHelper
 import net.trelent.document.helpers.LOGIN_URL
+import net.trelent.document.services.MyProjectService
 
 class LoginNotificationAction(text: String) : NotificationAction(text) {
 
@@ -14,10 +14,8 @@ class LoginNotificationAction(text: String) : NotificationAction(text) {
     }
 
     override fun actionPerformed(e: AnActionEvent, notification: Notification) {
-        var auth = AuthHelper()
-        auth.start()
-
-        BrowserUtil.browse(LOGIN_URL)
+        var service = e.project!!.getService(MyProjectService::class.java)
+        BrowserUtil.browse(LOGIN_URL + service.port)
 
         notification.hideBalloon()
     }

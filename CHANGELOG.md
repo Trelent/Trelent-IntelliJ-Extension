@@ -1,5 +1,8 @@
 # Trelent IntelliJ Plugin Changelog
 
-## [Unreleased]
+## 1.4.0
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Increased usage limits with account
+- Support for Google and Numpy docstring formats (check Settings -> Tools -> Trelent Settings)
+- Faster writing of docstrings
+- 
