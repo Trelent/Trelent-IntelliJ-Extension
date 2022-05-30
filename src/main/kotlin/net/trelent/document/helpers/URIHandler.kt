@@ -6,10 +6,11 @@ import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
-import com.intellij.util.queryParameters
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
+import java.net.URL
+import java.net.URLDecoder
 
 
 class URIService {
@@ -27,6 +28,10 @@ class URIService {
         server.start()
         this.server = server
         return port
+    }
+
+    fun getPort(): Int {
+        return server.address.port
     }
 
     fun stop() {
@@ -78,7 +83,9 @@ class URIService {
 
     private fun checkoutHandler() : HttpHandler {
         return HttpHandler { exchange ->
-            val event = exchange.requestURI.queryParameters["event"]
+            var compiledURL = URL("http", "localhost", getPort(), exchange.requestURI.path)
+            var queryParams = splitQuery(compiledURL)
+            val event = queryParams!!["event"]
 
             var message: String
             when (event) {
@@ -155,4 +162,20 @@ fun showError(message: String)
         NotificationType.ERROR
     )
     Notifications.Bus.notify(errNotification)
+}
+
+fun splitQuery(url: URL): Map<String, String>? {
+    val queryPairs: MutableMap<String, String> = LinkedHashMap()
+    if(url.query == null) {
+        return queryPairs
+    }
+
+    val query: String = url.query
+    val pairs = query.split("&".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+    for (pair in pairs) {
+        val idx = pair.indexOf("=")
+        queryPairs[URLDecoder.decode(pair.substring(0, idx), "UTF-8")] =
+            URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
+    }
+    return queryPairs
 }
