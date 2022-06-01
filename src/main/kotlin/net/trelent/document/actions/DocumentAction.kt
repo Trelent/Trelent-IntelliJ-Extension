@@ -30,8 +30,6 @@ import net.trelent.document.helpers.SUPPORTED_LANGUAGES
 import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.settings.TrelentSettingsState
 
-val intellijVersion = ApplicationInfo.getInstance().versionName.split(" ")[1]
-
 class DocumentAction : AnAction() {
 
     override fun update(e: AnActionEvent) {

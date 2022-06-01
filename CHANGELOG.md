@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 ### Added
+- Bug fix for PyCharm Professional
+
+## 1.7.0
+### Added
 - Bug fixes
 - Paid accounts
 - Backend improvements

@@ -17,19 +17,21 @@ internal class MyProjectManagerListener : ProjectManagerListener {
 
         // Check if there is a new version available
         val currentVersion = PluginManagerCore.getPlugin(PluginId.getId("net.trelent.document"))!!.version
-        val latestVersion = getLatestVersion()
+        val latestVersion = getLatestVersion()!!
 
         // If there is, prompt the user
         // Ideally there should be a button that auto-updates, will figure that out later.
         if(currentVersion != latestVersion) {
-            val versionNotification = Notification(
-                "Trelent Warning Notification Group",
-                "Trelent - New Version Available",
-                "You are currently using Trelent version $currentVersion. The latest available version is $latestVersion. Please update to the most recent version to get the latest improvements, features and more. To do so, navigate to Settings -> Plugins -> Trelent -> Update.",
-                NotificationType.WARNING
-            )
+            if(currentVersion < latestVersion) {
+                val versionNotification = Notification(
+                    "Trelent Warning Notification Group",
+                    "Trelent - New Version Available",
+                    "You are currently using Trelent version $currentVersion. The latest available version is $latestVersion. Please update to the most recent version to get the latest improvements, features and more. To do so, navigate to Settings -> Plugins -> Trelent -> Update.",
+                    NotificationType.WARNING
+                )
 
-            Notifications.Bus.notify(versionNotification, project)
+                Notifications.Bus.notify(versionNotification, project)
+            }
         }
     }
 }
