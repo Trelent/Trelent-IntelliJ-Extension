@@ -22,6 +22,7 @@
                 displayName="Trelent Settings"
         />
         <applicationService serviceImplementation="net.trelent.document.services.MyApplicationService"/>
+        <applicationService serviceImplementation="net.trelent.document.services.ParserService"/>
         <applicationService serviceImplementation="net.trelent.document.settings.TrelentSettingsState"/>
         <notificationGroup id="Trelent Error Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Info Notification Group" displayType="BALLOON" key="notification.group.trelent"/>

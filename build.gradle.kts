@@ -9,7 +9,7 @@ plugins {
     // Kotlin support + multiplatform serialization
     id("org.jetbrains.kotlin.jvm") version "1.6.10"
     // Gradle IntelliJ Plugin
-    id("org.jetbrains.intellij") version "1.10.1"
+    id("org.jetbrains.intellij") version "1.13.1"
     // Gradle Changelog Plugin
     id("org.jetbrains.changelog") version "1.3.1"
     // Gradle Qodana Plugin
@@ -20,10 +20,17 @@ group = properties("pluginGroup")
 version = properties("pluginVersion")
 
 // Configure project's dependencies
-repositories {
-    mavenCentral()
+allprojects{
+    repositories {
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+    }
 }
 
+
+dependencies {
+    implementation("com.github.serenadeai:java-tree-sitter:1.1.2")
+}
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
     pluginName.set(properties("pluginName"))
