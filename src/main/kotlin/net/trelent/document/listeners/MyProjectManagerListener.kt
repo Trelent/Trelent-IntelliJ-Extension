@@ -10,10 +10,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 import net.trelent.document.helpers.getLatestVersion
 import net.trelent.document.services.MyProjectService
+import net.trelent.document.services.ParserService
 
 internal class MyProjectManagerListener : ProjectManagerListener {
     override fun projectOpened(project: Project) {
         project.service<MyProjectService>()
+        service<ParserService>()
 
         // Check if there is a new version available
         val currentVersion = PluginManagerCore.getPlugin(PluginId.getId("net.trelent.document"))!!.version
