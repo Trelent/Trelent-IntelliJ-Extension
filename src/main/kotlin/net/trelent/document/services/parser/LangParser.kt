@@ -1,11 +1,10 @@
 package net.trelent.document.services.parser
 
-import ai.serenade.treesitter.Node
 import ai.serenade.treesitter.Tree
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.QueryGroup
 
-interface Parser {
+interface LangParser {
 
     fun filterTree(tree: Tree): List<QueryGroup>;
 

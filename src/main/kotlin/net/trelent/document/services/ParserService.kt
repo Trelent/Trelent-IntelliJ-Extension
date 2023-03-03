@@ -8,6 +8,7 @@ import com.intellij.util.ResourceUtil
 import com.jetbrains.rd.util.string.printToString
 import java.io.File
 import net.trelent.document.helpers.SUPPORTED_LANGUAGES
+import net.trelent.document.services.parser.*
 
 class ParserService{
 
@@ -70,7 +71,9 @@ class ParserService{
             val tree: Tree = parser.parseString(text);
             println("Finished")
             try{
-                println(tree.rootNode.nodeString);
+                val parser = getParser(lang)!!
+                val groups = parser.filterTree(tree)
+                println(groups.printToString());
             }
             catch(e: Error){
                 println("Error parsing tree: ${e.stackTrace}")
@@ -82,6 +85,17 @@ class ParserService{
             return
         }
 
+    }
+
+    private fun getParser(language: String): LangParser? {
+        return when (language) {
+            "python" -> PythonLangParser()
+            "java" -> JavaLangParser()
+            "csharp" -> CSharpLangParser()
+            "javascript" -> JavaScriptLangParser()
+            "typescript" -> TypeScriptLangParser()
+            else -> null
+        }
     }
 
 }
