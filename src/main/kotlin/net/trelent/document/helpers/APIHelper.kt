@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable
 import java.net.URLEncoder
 
 
-val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python")
+val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python", "typescript")
 private const val PARSE_CURRENT_FUNCTION_URL = "https://lambda.trelent.net/api/v4/ParseCurrent/ParseCurrentFunction"
 private const val VERSION_CHECK_URL          = "https://trelent.npkn.net/intellij-version-check"
 

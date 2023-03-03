@@ -1,14 +1,16 @@
 package net.trelent.document.services
 
+import ai.serenade.treesitter.Languages
+import ai.serenade.treesitter.Parser
+import ai.serenade.treesitter.Tree
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.ResourceUtil
 import java.io.File
-import java.nio.charset.StandardCharsets
-import kotlin.collections.listOf
+import net.trelent.document.helpers.SUPPORTED_LANGUAGES
+
 class ParserService{
 
-    private val supportedLanguages = listOf("python", "csharp", "java", "javascript", "typescript");
-
+   private lateinit var parser: Parser;
 
     init{
 
@@ -21,8 +23,63 @@ class ParserService{
         tempFile.writeBytes(bytes);
         System.load(tempFile.path);
 
+        try{
+            parser = Parser();
+        }
+        catch(e: Error){
+            println("Error creating parser: ${e.stackTrace}")
+        }
+
         println("Parser service init finished")
-        println(tempFile.path)
+        println("Path to temp file: ${tempFile.path}")
 
     }
+
+    fun parseDocument(text: String, lang: String){
+        if(!SUPPORTED_LANGUAGES.contains(lang)){
+            //TODO: Handle fail
+            return;
+        }
+        if(!this::parser.isInitialized){
+            try{
+                parser = Parser()
+            }
+            catch(e: Error){
+                println("Error creating parser: ${e.stackTrace}")
+                return
+            }
+        }
+
+        //Can return because supported languages checked above
+        val language: Long = when (lang){
+            "csharp" -> Languages.cSharp()
+            "java" -> Languages.java()
+            "javascript" -> Languages.javascript()
+            "python" -> Languages.python()
+            "typescript" -> Languages.typescript()
+            else -> return
+        }
+
+        try{
+            println("Pre-parse language = $language")
+            parser.setLanguage(Languages.python());
+            println("Post language change")
+            val tree: Tree = parser.parseString("def foo():\n" +
+                    "    return 1");
+            println("Finished")
+            try{
+                //val root = tree.rootNode;
+            }
+            catch(e: Error){
+                println("Error parsing tree: ${e.stackTrace}")
+            }
+
+        }
+        catch(e: Error){
+            println("Error parsing tree: ${e.stackTrace}")
+            return
+        }
+
+    }
+
 }

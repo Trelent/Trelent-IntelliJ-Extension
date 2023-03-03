@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
@@ -28,6 +29,7 @@ import net.trelent.document.helpers.parseCurrentFunction
 import net.trelent.document.helpers.getDocstring
 import net.trelent.document.helpers.SUPPORTED_LANGUAGES
 import net.trelent.document.helpers.getExtensionLanguage
+import net.trelent.document.services.ParserService
 import net.trelent.document.settings.TrelentSettingsState
 
 class DocumentAction : AnAction() {
@@ -69,6 +71,9 @@ class DocumentAction : AnAction() {
             override fun run(indicator: ProgressIndicator) {
                 indicator.text = "Writing docstring..."
                 indicator.isIndeterminate = true
+
+                val parser = service<ParserService>();
+                parser.parseDocument(sourceCode, language);
                 val currentFunction = parseCurrentFunction(
                     arrayOf(cursor.visualPosition.getLine(), cursor.visualPosition.getColumn()),
                     language,
