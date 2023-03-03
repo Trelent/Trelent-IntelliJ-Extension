@@ -1,5 +1,6 @@
 package net.trelent.document.helpers
 
+import ai.serenade.treesitter.Node
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -102,6 +103,14 @@ data class Function(
     var params: Array<String>,
     var range: Array<Array<Int>>,
     var text: String
+)
+
+data class QueryGroup(
+    var defNode: Node,
+    var nameNode: Node,
+    var paramsNode: Node,
+    var bodyNode: Node,
+    var docNodes: Array<Node>
 )
 
 data class VersionReturn(

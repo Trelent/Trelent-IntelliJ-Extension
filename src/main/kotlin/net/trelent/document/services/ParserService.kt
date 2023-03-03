@@ -5,6 +5,7 @@ import ai.serenade.treesitter.Parser
 import ai.serenade.treesitter.Tree
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.ResourceUtil
+import com.jetbrains.rd.util.string.printToString
 import java.io.File
 import net.trelent.document.helpers.SUPPORTED_LANGUAGES
 
@@ -60,15 +61,16 @@ class ParserService{
             else -> return
         }
 
+        println(lang);
+
         try{
             println("Pre-parse language = $language")
-            parser.setLanguage(Languages.python());
+            parser.setLanguage(language);
             println("Post language change")
-            val tree: Tree = parser.parseString("def foo():\n" +
-                    "    return 1");
+            val tree: Tree = parser.parseString(text);
             println("Finished")
             try{
-                //val root = tree.rootNode;
+                println(tree.rootNode.nodeString);
             }
             catch(e: Error){
                 println("Error parsing tree: ${e.stackTrace}")
