@@ -16,8 +16,8 @@ import java.net.URLEncoder
 
 
 val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python")
-private const val PARSE_CURRENT_FUNCTION_URL = "https://lambda.trelent.net/api/v4/ParseCurrent/ParseCurrentFunction"
-private const val VERSION_CHECK_URL          = "https://trelent.npkn.net/intellij-version-check"
+private const val PARSE_CURRENT_FUNCTION_URL = "https://code-parsing-server.fly.dev/parse"
+private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
 const val LOGIN_URL                          = "https://prod-api.trelent.net/auth/login?mode=login&port="
@@ -65,7 +65,6 @@ data class DocstringRequest(
 )
 
 data class ParsingRequest(
-    var cursor: Array<Int>,
     var language: String,
     var source: String
 )
@@ -87,20 +86,16 @@ data class Docstring(
     var line: Int
 )
 
-data class FuncReturn(
-    var success: Boolean,
-    var current_function: Function
-)
-
 data class Function(
     var body: String,
     var definition: String,
+    var docstring: String,
     var docstring_point: Array<Int>,
-    var hasDocstring: Boolean,
-    var indentation: Int,
+    var docstring_offset: Int,
     var name: String,
     var params: Array<String>,
     var range: Array<Array<Int>>,
+    var offsets: Array<Int>,
     var text: String
 )
 
@@ -178,22 +173,18 @@ fun getLatestVersion(): String? {
     }
 }
 
-fun parseCurrentFunction(cursor: Array<Int>, language: String, source: String): Function? {
-    val req = ParsingRequest(cursor = cursor, language = language, source = source)
+fun parseFunctions(language: String, source: String): Array<Function> {
+    val req = ParsingRequest(language = language, source = source)
     val body = Gson().toJson(req)
 
     try {
         val returned = sendRequest(body, PARSE_CURRENT_FUNCTION_URL)
-        val result = Gson().fromJson(returned, FuncReturn::class.java)
-        if(result.success)
-        {
-            return result.current_function
-        }
+        return Gson().fromJson(returned, Array<Function>::class.java)
     } catch (e: Exception) {
         printlnError(e.message.toString())
     }
 
-    return null
+    return arrayOf()
 }
 
 fun sendRequest(body: String, url: String, token: String = ""): String? {
