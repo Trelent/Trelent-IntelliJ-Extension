@@ -6,7 +6,7 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.application.ApplicationInfo
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Document
@@ -16,7 +16,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.TextRange
+import com.jetbrains.rd.util.printlnError
 import net.trelent.document.actions.notifications.LoginNotificationAction
 import net.trelent.document.actions.notifications.SignupNotificationAction
 import net.trelent.document.actions.notifications.UpgradeLearnNotificationAction
@@ -24,7 +24,8 @@ import net.trelent.document.actions.notifications.UpgradeNotificationAction
 import org.jetbrains.annotations.NotNull
 
 
-import net.trelent.document.helpers.parseCurrentFunction
+import net.trelent.document.helpers.parseFunctions
+import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.getDocstring
 import net.trelent.document.helpers.SUPPORTED_LANGUAGES
 import net.trelent.document.helpers.getExtensionLanguage
@@ -38,127 +39,142 @@ class DocumentAction : AnAction() {
 
     override fun actionPerformed(@NotNull e: AnActionEvent) {
 
+        try {
 
-        // Get the open project and editor, if there is one
-        val project: Project = e.getRequiredData(CommonDataKeys.PROJECT)
-        val editor: Editor? = e.getData(CommonDataKeys.EDITOR)
-        if(editor == null)
-        {
-            showError("No text editor is open! To write a docstring, you must have a text editor open and click within somewhere on a function.", project)
-            return
-        }
 
-        // Get the editor's contents, language, and cursor
-        val document: Document = editor.document
-        val cursor: Caret = editor.caretModel.currentCaret
-        val sourceCode = document.text
-        val file = FileEditorManager.getInstance(project).selectedFiles[0]
-        val language = getExtensionLanguage(file.extension!!)!!
-
-        // Get a user id for the user on this machine
-        val userId = System.getProperty("user.name")
-
-        // Check if this is a supported language
-        if(!SUPPORTED_LANGUAGES.contains(language))
-        {
-            showError("We do not support this language yet. Currently supported languages include C#, Java, JavaScript and Python.", project)
-            return
-        }
-
-        val task = object : Task.Backgroundable(project, "Writing docstring") {
-            override fun run(indicator: ProgressIndicator) {
-                indicator.text = "Writing docstring..."
-                indicator.isIndeterminate = true
-                val currentFunction = parseCurrentFunction(
-                    arrayOf(cursor.visualPosition.getLine(), cursor.visualPosition.getColumn()),
-                    language,
-                    sourceCode
+            // Get the open project and editor, if there is one
+            val project: Project = e.getRequiredData(CommonDataKeys.PROJECT)
+            val editor: Editor? = e.getData(CommonDataKeys.EDITOR)
+            if (editor == null) {
+                showError(
+                    "No text editor is open! To write a docstring, you must have a text editor open and click within somewhere on a function.",
+                    project
                 )
+                return
+            }
 
-                if (currentFunction == null) {
-                    showError("Your cursor is not inside a valid function. Please click inside the function body if you have not already.", project)
-                    return
-                }
+            // Get the editor's contents, language, and cursor
+            val document: Document = editor.document
+            val cursor: Caret = editor.caretModel.currentCaret
+            val sourceCode = document.text
+            val file = FileEditorManager.getInstance(project).selectedFiles[0]
+            val language = getExtensionLanguage(file.extension!!)!!
 
-                // We got the current function!
-                val funcName   = currentFunction.name
-                var funcParams = currentFunction.params
-                val funcText   = currentFunction.text
+            // Get a user id for the user on this machine
+            val userId = System.getProperty("user.name")
 
-                // Cleanup empty params
-                if(funcParams == null) {
-                    funcParams = arrayOf()
-                }
-
-                // Get the docstring format
-                val settings = TrelentSettingsState.getInstance()
-                val format   = getFormat(language, settings)
-
-                // Request a docstring
-                val docstring = getDocstring(
-                    format,
-                    language,
-                    funcName,
-                    funcParams,
-                    "ext-intellij",
-                    funcText,
-                    userId
+            // Check if this is a supported language
+            if (!SUPPORTED_LANGUAGES.contains(language)) {
+                showError(
+                    "We do not support this language yet. Currently supported languages include C#, Java, JavaScript and Python.",
+                    project
                 )
+                return
+            }
 
-                if(!docstring.successful)
-                {
-                    val error = docstring.error
-                    val errorType = docstring.error_type
+            val task = object : Task.Backgroundable(project, "Writing docstring") {
+                override fun run(indicator: ProgressIndicator) {
+                    indicator.text = "Writing docstring..."
+                    indicator.isIndeterminate = true
+                    val parsedFunctions = parseFunctions(
+                        language,
+                        sourceCode
+                    )
 
-                    if(errorType == null) {
-                        showError(docstring.error, project)
+                    var offset: Int = 0;
+                    ApplicationManager.getApplication().runReadAction {
+                        offset = cursor.offset;
+                    }
+
+                    val currentFunction = getCurrentFunction(parsedFunctions, offset);
+                    if (currentFunction == null) {
+                        showError(
+                            "Your cursor is not inside a valid function. Please click inside the function body if you have not already.",
+                            project
+                        )
                         return
                     }
 
-                    when (errorType) {
-                        "exceeded_anonymous_quota" -> {
-                            showAnonymousUsageError("Please sign up for a free account to get an extra 50 docs/month. You've hit your anonymous usage limit!", project)
-                        }
-                        "exceeded_free_quota" -> {
-                            showFreeUsageError("You have reached your usage limit. Please log in to Trelent to continue.", project)
-                        }
-                        "exceeded_paid_quota" -> {
-                            showPaidUsageError("You have reached your usage limit. Please log in to Trelent to continue.", project)
-                        }
-                        else -> {
+                    // We got the current function!
+                    val funcName = currentFunction.name
+                    var funcParams = currentFunction.params
+                    val funcText = currentFunction.text
+
+                    // Cleanup empty params
+                    if (funcParams == null) {
+                        funcParams = arrayOf()
+                    }
+
+                    // Get the docstring format
+                    val settings = TrelentSettingsState.getInstance()
+                    val format = getFormat(language, settings)
+
+                    // Request a docstring
+                    val docstring = getDocstring(
+                        format,
+                        language,
+                        funcName,
+                        funcParams,
+                        "ext-intellij",
+                        funcText,
+                        userId
+                    )
+
+                    if (!docstring.successful) {
+                        val error = docstring.error
+                        val errorType = docstring.error_type
+
+                        if (errorType == null) {
                             showError(docstring.error, project)
+                            return
                         }
+
+                        when (errorType) {
+                            "exceeded_anonymous_quota" -> {
+                                showAnonymousUsageError(
+                                    "Please sign up for a free account to get an extra 50 docs/month. You've hit your anonymous usage limit!",
+                                    project
+                                )
+                            }
+
+                            "exceeded_free_quota" -> {
+                                showFreeUsageError(
+                                    "You have reached your usage limit. Please log in to Trelent to continue.",
+                                    project
+                                )
+                            }
+
+                            "exceeded_paid_quota" -> {
+                                showPaidUsageError(
+                                    "You have reached your usage limit. Please log in to Trelent to continue.",
+                                    project
+                                )
+                            }
+
+                            else -> {
+                                showError(docstring.error, project)
+                            }
+                        }
+
+                        return
                     }
 
-                    return
-                }
+                    // Get docstring and related metadata
+                    val docStringPoint = currentFunction.docstring_point
+                    val docStringLine = docStringPoint[0]
+                    val docStringColumn = docStringPoint[1]
+                    var docStringPosition = currentFunction.docstring_offset
 
-                // Get docstring and related metadata
-                val docStringPoint = currentFunction.docstring_point
-                val docStringLine = docStringPoint[0]
-                val docStringColumn = docStringPoint[1]
-                var docStringPosition = document.getLineStartOffset(docStringLine)
 
-                // Does this line contain anything other than whitespace
-                val lineContent = getLine(document, docStringLine)
-                if(isEmpty(lineContent))
-                {
-                    docStringPosition = document.getLineStartOffset(docStringLine + 1)
-                    // If so, we need to insert a newline before the docstring
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        document.insertString(docStringPosition, "\n")
-                    }
-                }
-                else {
-                    if(language != "python") {
-                        docStringPosition = document.getLineEndOffset(docStringLine)
-                    }
 
-                    val docstringText = if(language == "python") {
-                        docstring.data?.docstring!!.prependIndent(" ".repeat(docStringColumn)) + "\n"
-                    } else {
-                        "\n" + docstring.data?.docstring!!.prependIndent(" ".repeat(docStringColumn))
-                    }
+
+                    val docstringLiteral = docstring.data?.docstring!!.split("\n")
+                    val docstringFirstLine = docstringLiteral[0]
+                    val restOfDocstring = docstringLiteral.subList(1, docstringLiteral.size).joinToString("\n")
+
+                    val docstringText =
+                        docstringFirstLine + ("\n" + restOfDocstring + "\n").prependIndent(" ".repeat(docStringColumn))
+                            .replaceFirst("^\\s++", "")
 
                     // Insert the docstring
                     WriteCommandAction.runWriteCommandAction(project) {
@@ -166,27 +182,30 @@ class DocumentAction : AnAction() {
                     }
                 }
             }
+            ProgressManager.getInstance().run(task)
         }
-        ProgressManager.getInstance().run(task)
-    }
-
-    fun isEmpty(line: String) : Boolean
-    {
-        // Use regex to check if this string only contains whitespace
-        val regex = Regex("^\\s+$")
-        if(regex.containsMatchIn(line))
-        {
-            return true
+        catch(e: Exception){
+            printlnError("Error parsing: ${e.stackTraceToString()}");
         }
-
-        return false
     }
 
-    fun getLine(document: Document, lineNumber: Int): String {
-        val startLineStartOffset = document.getLineStartOffset(lineNumber)
-        val startLineEndOffset = document.getLineEndOffset(lineNumber)
-        return document.getText(TextRange(startLineStartOffset, startLineEndOffset))
+    fun getCurrentFunction(functions: Array<Function>, offset: Int): Function?{
+        val within: ArrayList<Function> = arrayListOf()
+
+        functions.forEach{
+            if(it.offsets[0] <= offset && it.offsets[1] >= offset){
+                within.add(it);
+            }
+        }
+        val bestChoice = within.stream().min(Comparator.comparing{
+            it.offsets[1] - it.offsets[0]
+        })
+        if(bestChoice.isEmpty){
+            return null
+        }
+        return bestChoice.get();
     }
+
 }
 
 fun showError(message: String, project: Project)

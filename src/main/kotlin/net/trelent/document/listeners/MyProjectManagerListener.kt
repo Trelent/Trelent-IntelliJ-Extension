@@ -8,6 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
+import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.getLatestVersion
 import net.trelent.document.services.MyProjectService
 
@@ -16,8 +17,16 @@ internal class MyProjectManagerListener : ProjectManagerListener {
         project.service<MyProjectService>()
 
         // Check if there is a new version available
-        val currentVersion = PluginManagerCore.getPlugin(PluginId.getId("net.trelent.document"))!!.version
-        val latestVersion = getLatestVersion()!!
+        var currentVersion = "1.8.5";
+        var latestVersion = "1.8.5";
+        try{
+            currentVersion = PluginManagerCore.getPlugin(PluginId.getId("net.trelent.document"))!!.version
+            latestVersion = getLatestVersion()!!
+        }
+        catch(e: Exception){
+            printlnError("Cannot get current version");
+        }
+
 
         // If there is, prompt the user
         // Ideally there should be a button that auto-updates, will figure that out later.
