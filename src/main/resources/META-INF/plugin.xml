@@ -27,6 +27,7 @@
         <notificationGroup id="Trelent Info Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Warning Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <projectService serviceImplementation="net.trelent.document.services.MyProjectService"/>
+        <statusBarWidgetFactory implementation="net.trelent.document.widgets.PercentDocumented.PercentDocumentedWidgetProvider"/>
 
     </extensions>
 
