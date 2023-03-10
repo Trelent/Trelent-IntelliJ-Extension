@@ -9,6 +9,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.impl.status.EditorBasedWidget
@@ -47,14 +48,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     init{
         project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object: FileEditorManagerListener {
             override fun selectionChanged(event: FileEditorManagerEvent){
-                val newFile = event.newFile
-                val manager = project.getService(StatusBarWidgetsManager::class.java)
-                val factory = manager.widgetFactories.find{ it.id == ID()} ?: return
-                if(newFile != null){
-                    refreshDocumentation()
-                }
-                ApplicationManager.getApplication().getService(StatusBarWidgetSettings::class.java)
-                    .setEnabled(factory, newFile != null)
+                refreshDocumentation()
             }
         })
         label = JLabel()
@@ -65,7 +59,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     override fun dispose() {
-        Disposer.dispose(this)
+        label.isVisible = false
+        super.dispose()
     }
 
     private fun label(): JLabel{
@@ -75,6 +70,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0) else ColorUtil.mix(MID_COLOR, FULL_COLOR,
             (percentDocumented - 50F) / 50.0)
         label.background = background
+        label.isVisible = true
         return label
     }
     override fun ID(): String {
@@ -83,7 +79,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     override fun getComponent(): JComponent {
-        return label()
+            return label()
 
     }
 
@@ -117,8 +113,13 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
         catch(e: Exception){
             printlnError("Error refreshing documentation ${e.stackTraceToString()}")
+            clear()
         }
 
+    }
+
+    private fun clear(){
+        label.isVisible = false
     }
 
     fun update(){

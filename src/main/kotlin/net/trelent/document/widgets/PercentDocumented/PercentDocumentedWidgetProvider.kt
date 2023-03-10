@@ -1,10 +1,11 @@
 package net.trelent.document.widgets.PercentDocumented
 
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.openapi.wm.impl.status.widget.StatusBarEditorBasedWidgetFactory
 
 class PercentDocumentedWidgetProvider: StatusBarEditorBasedWidgetFactory() {
@@ -29,6 +30,7 @@ class PercentDocumentedWidgetProvider: StatusBarEditorBasedWidgetFactory() {
     }
 
     override fun canBeEnabledOn(statusBar: StatusBar): Boolean {
-        return true
+        val editor = getFileEditor(statusBar);
+        return editor != null && editor.file != null
     }
 }
