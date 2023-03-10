@@ -42,7 +42,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         @JvmStatic val EMPTY_COLOR: Color = JBColor.getHSBColor(0F, 1.0F, 0.5F)
     }
 
-    private var percentDocumented: Float = 0f;
+    private var percentDocumented: Float = -1f;
     private var label: JLabel;
 
     init{
@@ -70,7 +70,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0) else ColorUtil.mix(MID_COLOR, FULL_COLOR,
             (percentDocumented - 50F) / 50.0)
         label.background = background
-        label.isVisible = true
+        label.isVisible = percentDocumented >= 0
         return label
     }
     override fun ID(): String {
