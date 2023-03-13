@@ -30,7 +30,7 @@ class URIService {
         return port
     }
 
-    fun getPort(): Int {
+    private fun getPort(): Int {
         return server.address.port
     }
 
@@ -41,8 +41,8 @@ class URIService {
     private fun loginHandler() : HttpHandler {
         return HttpHandler { exchange ->
             val requestURL = exchange.requestURI.toString()
-            var token = requestURL.split("/")[2]
-            var response: String
+            val token = requestURL.split("/")[2]
+            val response: String
 
             if(token.isEmpty()) {
                 response = "<h1>Login failed.</h1><h3>Please close this window and try again.</h3>"
@@ -83,11 +83,11 @@ class URIService {
 
     private fun checkoutHandler() : HttpHandler {
         return HttpHandler { exchange ->
-            var compiledURL = URL("http", "localhost", getPort(), exchange.requestURI.path)
-            var queryParams = splitQuery(compiledURL)
-            val event = queryParams!!["event"]
+            val compiledURL = URL("http", "localhost", getPort(), exchange.requestURI.path)
+            val queryParams = splitQuery(compiledURL)
+            val event = queryParams["event"]
 
-            var message: String
+            val message: String
             when (event) {
                 null -> {
                     message = "Thank you for upgrading your account! Enjoy 1,000 docs/month, and more features " +
@@ -157,14 +157,14 @@ fun showError(message: String)
 {
     val errNotification = Notification(
         "Trelent Error Notification Group",
-        "Trelent Error",
+        "Trelent error",
         message,
         NotificationType.ERROR
     )
     Notifications.Bus.notify(errNotification)
 }
 
-fun splitQuery(url: URL): Map<String, String>? {
+fun splitQuery(url: URL): Map<String, String> {
     val queryPairs: MutableMap<String, String> = LinkedHashMap()
     if(url.query == null) {
         return queryPairs

@@ -1,27 +1,21 @@
 package net.trelent.document.widgets.PercentDocumented
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.impl.status.EditorBasedWidget
-import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetSettings
-import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.helpers.parseFunctions
-import org.jetbrains.annotations.NotNull
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -42,8 +36,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         @JvmStatic val EMPTY_COLOR: Color = JBColor.getHSBColor(0F, 1.0F, 0.5F)
     }
 
-    private var percentDocumented: Float = -1f;
-    private var label: JLabel;
+    private var percentDocumented: Float = -1f
+    private var label: JLabel
 
     init{
         project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object: FileEditorManagerListener {
@@ -53,9 +47,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         })
         label = JLabel()
         label.icon = ICON
-        label.isOpaque = true;
+        label.isOpaque = true
         refreshDocumentation()
-        label()
     }
 
     override fun dispose() {
@@ -63,7 +56,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         super.dispose()
     }
 
-    private fun label(): JLabel{
+    private fun updateLabel(): JLabel{
         val rounder = DecimalFormat("#.##")
         rounder.roundingMode = RoundingMode.DOWN
         label.text = "File ${rounder.format(percentDocumented)}% Documented"
@@ -79,8 +72,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     override fun getComponent(): JComponent {
-            return label()
-
+            return updateLabel()
     }
 
     override fun install(statusBar: StatusBar){
@@ -91,7 +83,30 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         })
     }
 
-    private fun refreshDocumentation(){
+    fun externalRefresh(editor: Editor, language: String){
+        println("Refreshing documentation")
+
+        try{
+            val document: Document = editor.document
+            val sourceCode = document.text
+
+            val parsedFunctions = parseFunctions(language, sourceCode)
+
+            val documentedFunctions: Float = parsedFunctions.count {
+                it.docstring != null
+            }.toFloat()
+
+            percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
+            updateLabel()
+        }
+
+        catch(e: Exception){
+            printlnError("Error refreshing documentation ${e.stackTraceToString()}")
+            clear()
+        }
+    }
+
+    fun refreshDocumentation(){
         println("Refreshing documentation")
 
         try{
@@ -107,8 +122,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
                 it.docstring != null
             }.toFloat()
 
-            percentDocumented = (documentedFunctions/parsedFunctions.size) * 100;
-            label()
+            percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
+            updateLabel()
         }
 
         catch(e: Exception){
@@ -120,14 +135,6 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
     private fun clear(){
         label.isVisible = false
-    }
-
-    fun update(){
-        val manager = project.getService(StatusBarWidgetsManager::class.java)
-        val factory = manager.widgetFactories.find{ it.id == ID()} ?: return
-        manager.updateWidget(factory)
-        myStatusBar.updateWidget(ID())
-
     }
 
 }

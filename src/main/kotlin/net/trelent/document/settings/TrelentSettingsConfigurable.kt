@@ -1,7 +1,6 @@
 package net.trelent.document.settings
 
 import com.intellij.openapi.options.Configurable
-import org.jetbrains.annotations.Nls
 import javax.swing.JComponent
 
 
@@ -16,7 +15,7 @@ class TrelentSettingsConfigurable : Configurable {
 
     // A default constructor with no arguments is required because this implementation
     // is registered as an applicationConfigurable EP
-    override fun getDisplayName(): String? {
+    override fun getDisplayName(): String {
         return "Trelent Settings"
     }
 

@@ -14,7 +14,7 @@ class SignupNotificationAction(text: String) : NotificationAction(text) {
     }
 
     override fun actionPerformed(e: AnActionEvent, notification: Notification) {
-        var service = e.project!!.getService(MyProjectService::class.java)
+        val service = e.project!!.getService(MyProjectService::class.java)
         BrowserUtil.browse(SIGNUP_URL + service.port)
 
         notification.hideBalloon()

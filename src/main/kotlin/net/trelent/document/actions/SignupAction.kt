@@ -16,7 +16,7 @@ class SignupAction : AnAction() {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        var service = e.project!!.getService(MyProjectService::class.java)
+        val service = e.project!!.getService(MyProjectService::class.java)
         BrowserUtil.browse(SIGNUP_URL + service.port)
     }
 }

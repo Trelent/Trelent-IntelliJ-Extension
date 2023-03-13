@@ -1,7 +1,5 @@
 package net.trelent.document.widgets.PercentDocumented
 
-import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.StatusBar
@@ -26,11 +24,11 @@ class PercentDocumentedWidgetProvider: StatusBarEditorBasedWidgetFactory() {
     }
 
     override fun disposeWidget(widget: StatusBarWidget) {
-        Disposer.dispose(widget);
+        Disposer.dispose(widget)
     }
 
     override fun canBeEnabledOn(statusBar: StatusBar): Boolean {
-        val editor = getFileEditor(statusBar);
+        val editor = getFileEditor(statusBar)
         return editor != null && editor.file != null
     }
 }

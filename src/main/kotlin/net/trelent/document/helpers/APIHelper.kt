@@ -89,7 +89,7 @@ data class Docstring(
 data class Function(
     var body: String,
     var definition: String,
-    var docstring: String,
+    var docstring: String?,
     var docstring_point: Array<Int>,
     var docstring_offset: Int,
     var name: String,
@@ -104,9 +104,9 @@ data class VersionReturn(
 )
 
 fun getCheckoutURL(port: Int): String? {
-    var url = "http://localhost:$port/checkout"
-    var redirectURL = "$CHECKOUT_RETURN_URL${URLEncoder.encode(url, "UTF-8")}"
-    var requestURL = "$GET_CHECKOUT_URL&return_url=$redirectURL"
+    val url = "http://localhost:$port/checkout"
+    val redirectURL = "$CHECKOUT_RETURN_URL${URLEncoder.encode(url, "UTF-8")}"
+    val requestURL = "$GET_CHECKOUT_URL&return_url=$redirectURL"
 
     val token = getToken()
     if(token == null || token == "") {
@@ -122,9 +122,9 @@ fun getCheckoutURL(port: Int): String? {
 }
 
 fun getPortalURL(port: Int): String? {
-    var url = "http://localhost:$port/portal"
-    var redirectURL = "$PORTAL_RETURN_URL${URLEncoder.encode(url, "UTF-8")}"
-    var requestURL = "$GET_PORTAL_URL?return_url=$redirectURL"
+    val url = "http://localhost:$port/portal"
+    val redirectURL = "$PORTAL_RETURN_URL${URLEncoder.encode(url, "UTF-8")}"
+    val requestURL = "$GET_PORTAL_URL?return_url=$redirectURL"
 
     val token = getToken()
     if(token == null || token == "") {

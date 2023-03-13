@@ -15,8 +15,8 @@ class UpgradeNotificationAction(text: String) : NotificationAction(text) {
     }
 
     override fun actionPerformed(e: AnActionEvent, notification: Notification) {
-        var service = e.project!!.getService(MyProjectService::class.java)
-        var sessionURL = getCheckoutURL(service.port)
+        val service = e.project!!.getService(MyProjectService::class.java)
+        val sessionURL = getCheckoutURL(service.port)
 
         if(sessionURL != null) {
             BrowserUtil.browse(sessionURL)

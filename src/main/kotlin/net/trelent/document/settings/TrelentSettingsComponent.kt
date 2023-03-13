@@ -21,17 +21,17 @@ class TrelentSettingsComponent {
 
     private val myMainPanel: JPanel
 
-    private val csharpFormat = JBList<String>("xml")
-    private val javaFormat = JBList<String>("javadoc")
-    private val javascriptFormat = JBList<String>("jsdoc")
-    private val pythonFormat = JBList<String>("rest", "google", "numpy")
+    private val csharpFormat = JBList("xml")
+    private val javaFormat = JBList("javadoc")
+    private val javascriptFormat = JBList("jsdoc")
+    private val pythonFormat = JBList("rest", "google", "numpy")
 
     init {
         myMainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent("C# Docstring Format", csharpFormat, 1)
-            .addLabeledComponent("Java Docstring Format", javaFormat, 10)
-            .addLabeledComponent("JavaScript Docstring Format", javascriptFormat, 10)
-            .addLabeledComponent("Python Docstring Format", pythonFormat, 10)
+            .addLabeledComponent("C# docstring format", csharpFormat, 1)
+            .addLabeledComponent("Java docstring format", javaFormat, 10)
+            .addLabeledComponent("JavaScript docstring format", javascriptFormat, 10)
+            .addLabeledComponent("Python docstring format", pythonFormat, 10)
             .addComponentFillVertically(JPanel(), 0)
             .panel
     }

@@ -15,7 +15,7 @@ class LoginAction : AnAction() {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        var service = e.project!!.getService(MyProjectService::class.java)
+        val service = e.project!!.getService(MyProjectService::class.java)
         BrowserUtil.browse(LOGIN_URL + service.port)
     }
 }
