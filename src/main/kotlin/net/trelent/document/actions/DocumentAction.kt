@@ -58,7 +58,7 @@ class DocumentAction : AnAction() {
             val cursor: Caret = editor.caretModel.currentCaret
             val sourceCode = document.text
             val file = FileEditorManager.getInstance(project).selectedFiles[0]
-            val language = getExtensionLanguage(file.extension!!)!!
+            var language = getExtensionLanguage(file.extension!!)!!
 
             // Get a user id for the user on this machine
             val userId = System.getProperty("user.name")
@@ -109,6 +109,10 @@ class DocumentAction : AnAction() {
                     val settings = TrelentSettingsState.getInstance()
                     val format = getFormat(language, settings)
 
+                    //FIXME: Remove this when typescript support added in backend
+                    if(language == "typescript"){
+                        language = "javascript"
+                    }
                     // Request a docstring
                     val docstring = getDocstring(
                         format,
