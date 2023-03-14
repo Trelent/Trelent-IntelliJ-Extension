@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>net.trelent.document</id>
     <name>Trelent - AI Docstrings on Demand</name>
-    <version>1.4.0</version>
+    <version>1.8.6</version>
     <vendor email="contact@trelent.net" url="https://trelent.net">Trelent</vendor>
     <description>
         <![CDATA[
@@ -68,7 +68,7 @@
             <action id="net.trelent.document.actions.BillingPortalAction"
                     class="net.trelent.document.actions.BillingPortalAction"
                     text="Open Billing Portal"
-                    description="Open Billing Portal."
+                    description="Open billing portal."
                     icon="TrelentPluginIcons.DocumentActionIcon"
             />
             <add-to-group group-id="ToolsMenu"/>
