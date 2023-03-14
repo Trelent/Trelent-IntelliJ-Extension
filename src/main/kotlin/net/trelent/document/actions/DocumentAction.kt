@@ -1,5 +1,6 @@
 package net.trelent.document.actions
 
+
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
@@ -16,20 +17,20 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.StatusBar
+import com.intellij.openapi.wm.StatusBarWidget
+import com.intellij.openapi.wm.WindowManager
+import com.intellij.util.castSafelyTo
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.actions.notifications.LoginNotificationAction
 import net.trelent.document.actions.notifications.SignupNotificationAction
 import net.trelent.document.actions.notifications.UpgradeLearnNotificationAction
 import net.trelent.document.actions.notifications.UpgradeNotificationAction
-import org.jetbrains.annotations.NotNull
-
-
-import net.trelent.document.helpers.parseFunctions
+import net.trelent.document.helpers.*
 import net.trelent.document.helpers.Function
-import net.trelent.document.helpers.getDocstring
-import net.trelent.document.helpers.SUPPORTED_LANGUAGES
-import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.settings.TrelentSettingsState
+import net.trelent.document.widgets.PercentDocumented.PercentDocumentedWidget
+import org.jetbrains.annotations.NotNull
 
 class DocumentAction : AnAction() {
 
@@ -58,7 +59,7 @@ class DocumentAction : AnAction() {
             val cursor: Caret = editor.caretModel.currentCaret
             val sourceCode = document.text
             val file = FileEditorManager.getInstance(project).selectedFiles[0]
-            val language = getExtensionLanguage(file.extension!!)!!
+            var language = getExtensionLanguage(file.extension!!)!!
 
             // Get a user id for the user on this machine
             val userId = System.getProperty("user.name")
@@ -81,12 +82,12 @@ class DocumentAction : AnAction() {
                         sourceCode
                     )
 
-                    var offset: Int = 0;
+                    var offset = 0
                     ApplicationManager.getApplication().runReadAction {
-                        offset = cursor.offset;
+                        offset = cursor.offset
                     }
 
-                    val currentFunction = getCurrentFunction(parsedFunctions, offset);
+                    val currentFunction = getCurrentFunction(parsedFunctions, offset)
                     if (currentFunction == null) {
                         showError(
                             "Your cursor is not inside a valid function. Please click inside the function body if you have not already.",
@@ -97,18 +98,17 @@ class DocumentAction : AnAction() {
 
                     // We got the current function!
                     val funcName = currentFunction.name
-                    var funcParams = currentFunction.params
+                    val funcParams = currentFunction.params
                     val funcText = currentFunction.text
-
-                    // Cleanup empty params
-                    if (funcParams == null) {
-                        funcParams = arrayOf()
-                    }
 
                     // Get the docstring format
                     val settings = TrelentSettingsState.getInstance()
                     val format = getFormat(language, settings)
 
+                    //FIXME: Remove this when typescript support added in backend
+                    if(language == "typescript"){
+                        language = "javascript"
+                    }
                     // Request a docstring
                     val docstring = getDocstring(
                         format,
@@ -121,7 +121,6 @@ class DocumentAction : AnAction() {
                     )
 
                     if (!docstring.successful) {
-                        val error = docstring.error
                         val errorType = docstring.error_type
 
                         if (errorType == null) {
@@ -161,9 +160,8 @@ class DocumentAction : AnAction() {
 
                     // Get docstring and related metadata
                     val docStringPoint = currentFunction.docstring_point
-                    val docStringLine = docStringPoint[0]
                     val docStringColumn = docStringPoint[1]
-                    var docStringPosition = currentFunction.docstring_offset
+                    val docStringPosition = currentFunction.docstring_offset
 
 
 
@@ -180,12 +178,24 @@ class DocumentAction : AnAction() {
                     WriteCommandAction.runWriteCommandAction(project) {
                         document.insertString(docStringPosition, docstringText)
                     }
+
+                    // Update docs progress
+                    val statusBar: StatusBar = WindowManager.getInstance().getStatusBar(project)
+                    val widget: StatusBarWidget? = statusBar.getWidget(PercentDocumentedWidget.WIDGET_ID)
+                    if(widget != null) {
+                        widget.castSafelyTo<PercentDocumentedWidget>()?.externalRefresh(editor, language)
+                    }
+                    else {
+                        println("Could not locate widget.")
+                    }
+                    println(widget == null)
+
                 }
             }
             ProgressManager.getInstance().run(task)
         }
         catch(e: Exception){
-            printlnError("Error parsing: ${e.stackTraceToString()}");
+            printlnError("Error parsing: ${e.stackTraceToString()}")
         }
     }
 
@@ -194,7 +204,7 @@ class DocumentAction : AnAction() {
 
         functions.forEach{
             if(it.offsets[0] <= offset && it.offsets[1] >= offset){
-                within.add(it);
+                within.add(it)
             }
         }
         val bestChoice = within.stream().min(Comparator.comparing{
@@ -203,7 +213,7 @@ class DocumentAction : AnAction() {
         if(bestChoice.isEmpty){
             return null
         }
-        return bestChoice.get();
+        return bestChoice.get()
     }
 
 }

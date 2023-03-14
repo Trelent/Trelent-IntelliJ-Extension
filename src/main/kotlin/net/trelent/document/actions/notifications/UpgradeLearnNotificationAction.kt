@@ -4,9 +4,6 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import net.trelent.document.helpers.getCheckoutURL
-import net.trelent.document.helpers.showGenericError
-import net.trelent.document.services.MyProjectService
 
 class UpgradeLearnNotificationAction(text: String) : NotificationAction(text) {
 

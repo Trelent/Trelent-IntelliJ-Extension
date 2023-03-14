@@ -10,7 +10,7 @@ var languageMap = mapOf(
     "es" to "javascript",
     "es6" to "javascript",
     "gs" to "javascript",
-    "ts" to "javascript",
+    "ts" to "typescript",
     "py" to "python"
 )
 

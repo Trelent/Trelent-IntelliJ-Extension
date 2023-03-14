@@ -3,7 +3,6 @@ package net.trelent.document.actions
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import net.trelent.document.helpers.SIGNUP_URL
 import net.trelent.document.helpers.getPortalURL
 import net.trelent.document.helpers.getToken
 import net.trelent.document.helpers.showGenericError
@@ -18,8 +17,8 @@ class BillingPortalAction : AnAction() {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        var service = e.project!!.getService(MyProjectService::class.java)
-        var portalURL = getPortalURL(service.port)
+        val service = e.project!!.getService(MyProjectService::class.java)
+        val portalURL = getPortalURL(service.port)
 
         if(portalURL != null) {
             BrowserUtil.browse(portalURL)
