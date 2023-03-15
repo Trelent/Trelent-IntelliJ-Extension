@@ -101,14 +101,15 @@ class DocumentAction : AnAction() {
                     val funcParams = currentFunction.params
                     val funcText = currentFunction.text
 
-                    // Get the docstring format
-                    val settings = TrelentSettingsState.getInstance()
-                    val format = getFormat(language, settings)
-
                     //FIXME: Remove this when typescript support added in backend
                     if(language == "typescript"){
                         language = "javascript"
                     }
+
+                    // Get the docstring format
+                    val settings = TrelentSettingsState.getInstance()
+                    val format = getFormat(language, settings)
+
                     // Request a docstring
                     val docstring = getDocstring(
                         format,

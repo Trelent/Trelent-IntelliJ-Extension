@@ -17,8 +17,8 @@ internal class MyProjectManagerListener : ProjectManagerListener {
         project.service<MyProjectService>()
 
         // Check if there is a new version available
-        var currentVersion = "1.8.6"
-        var latestVersion = "1.8.6"
+        var currentVersion = "1.8.7"
+        var latestVersion = "1.8.7"
         try{
             currentVersion = PluginManagerCore.getPlugin(PluginId.getId("net.trelent.document"))!!.version
             latestVersion = getLatestVersion()!!
