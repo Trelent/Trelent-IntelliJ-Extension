@@ -132,6 +132,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
             catch(e: Exception){
                 printlnError("Error refreshing documentation ${e.stackTraceToString()}")
+                //TODO: Add more robust clear checking
                 clear()
             }
         }.start();
