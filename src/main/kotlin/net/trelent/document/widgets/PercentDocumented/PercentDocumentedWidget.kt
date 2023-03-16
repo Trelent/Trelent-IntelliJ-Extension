@@ -42,7 +42,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     init{
         project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object: FileEditorManagerListener {
             override fun selectionChanged(event: FileEditorManagerEvent){
-                refreshDocumentation()
+                    refreshDocumentation()
             }
         })
         label = JLabel()
@@ -60,8 +60,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         val rounder = DecimalFormat("#.##")
         rounder.roundingMode = RoundingMode.DOWN
         label.text = "File ${rounder.format(percentDocumented)}% Documented"
-        val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0) else ColorUtil.mix(MID_COLOR, FULL_COLOR,
-            (percentDocumented - 50F) / 50.0)
+        val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
+        else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
         label.background = background
         label.isVisible = percentDocumented >= 0
         return label
@@ -84,52 +84,58 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     fun externalRefresh(editor: Editor, language: String){
-        println("Refreshing documentation")
+        Thread{
+            println("Refreshing documentation")
 
-        try{
-            val document: Document = editor.document
-            val sourceCode = document.text
+            try{
+                val document: Document = editor.document
+                val sourceCode = document.text
 
-            val parsedFunctions = parseFunctions(language, sourceCode)
+                val parsedFunctions = parseFunctions(language, sourceCode)
 
-            val documentedFunctions: Float = parsedFunctions.count {
-                it.docstring != null
-            }.toFloat()
+                val documentedFunctions: Float = parsedFunctions.count {
+                    it.docstring != null
+                }.toFloat()
 
-            percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
-            updateLabel()
-        }
+                percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
+                updateLabel()
+            }
 
-        catch(e: Exception){
-            printlnError("Error refreshing documentation ${e.stackTraceToString()}")
-            clear()
-        }
+            catch(e: Exception){
+                printlnError("Error refreshing documentation ${e.stackTraceToString()}")
+                clear()
+            }
+        }.start()
+
     }
 
     fun refreshDocumentation(){
-        println("Refreshing documentation")
+        Thread{
+            println("Refreshing documentation")
 
-        try{
-            val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
-            val document: Document = editor.document
-            val sourceCode = document.text
-            val file = FileEditorManager.getInstance(project).selectedFiles[0]
-            val language = getExtensionLanguage(file.extension!!)!!
+            try{
+                val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
+                val document: Document = editor.document
+                val sourceCode = document.text
+                val file = FileEditorManager.getInstance(project).selectedFiles[0]
+                val language = getExtensionLanguage(file.extension!!)!!
 
-            val parsedFunctions = parseFunctions(language, sourceCode)
+                val parsedFunctions = parseFunctions(language, sourceCode)
 
-            val documentedFunctions: Float = parsedFunctions.count {
-                it.docstring != null
-            }.toFloat()
+                val documentedFunctions: Float = parsedFunctions.count {
+                    it.docstring != null
+                }.toFloat()
 
-            percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
-            updateLabel()
-        }
+                percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
+                updateLabel()
+            }
 
-        catch(e: Exception){
-            printlnError("Error refreshing documentation ${e.stackTraceToString()}")
-            clear()
-        }
+            catch(e: Exception){
+                printlnError("Error refreshing documentation ${e.stackTraceToString()}")
+                clear()
+            }
+        }.start();
+
 
     }
 
