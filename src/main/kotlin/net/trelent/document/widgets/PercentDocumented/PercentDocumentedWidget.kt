@@ -1,6 +1,7 @@
 package net.trelent.document.widgets.PercentDocumented
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -84,7 +85,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     fun externalRefresh(editor: Editor, language: String){
-        Thread{
+        ApplicationManager.getApplication().invokeLater(
+                Thread{
             println("Refreshing documentation")
 
             try{
@@ -105,11 +107,13 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
                 printlnError("Error refreshing documentation ${e.stackTraceToString()}")
                 clear()
             }
-        }.start()
+        })
 
     }
 
     fun refreshDocumentation(){
+
+        ApplicationManager.getApplication().invokeLater(
         Thread{
             println("Refreshing documentation")
 
@@ -135,7 +139,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
                 //TODO: Add more robust clear checking
                 clear()
             }
-        }.start();
+        })
 
 
     }
