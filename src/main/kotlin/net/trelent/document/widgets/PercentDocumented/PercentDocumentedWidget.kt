@@ -8,6 +8,9 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFileAdapter
+import com.intellij.openapi.vfs.VirtualFileEvent
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.impl.status.EditorBasedWidget
@@ -17,6 +20,7 @@ import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.helpers.parseFunctions
+import org.jetbrains.annotations.NotNull
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -41,6 +45,14 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     private var label: JLabel
 
     init{
+        VirtualFileManager.getInstance().addVirtualFileListener(object : VirtualFileAdapter() {
+            override fun contentsChanged(@NotNull event: VirtualFileEvent) {
+                if (event.isFromSave || event.isFromRefresh) {
+                    refreshDocumentation()
+                }
+            }
+        })
+
         project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object: FileEditorManagerListener {
             override fun selectionChanged(event: FileEditorManagerEvent){
                     refreshDocumentation()
@@ -49,6 +61,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         label = JLabel()
         label.icon = ICON
         label.isOpaque = true
+
         refreshDocumentation()
     }
 
@@ -80,6 +93,16 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         this.label.addMouseListener(object: MouseAdapter() {
             override fun mouseClicked(e: MouseEvent?) {
                 refreshDocumentation()
+            }
+
+            override fun mouseEntered(e: MouseEvent?) {
+                val background = ColorUtil.darker(label.background, 1)
+                label.background = background
+            }
+
+            override fun mouseExited(e: MouseEvent?) {
+                val background = ColorUtil.brighter(label.background, 1)
+                label.background = background
             }
         })
     }
@@ -117,27 +140,27 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         Thread{
             println("Refreshing documentation")
 
-            try{
-                val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
-                val document: Document = editor.document
-                val sourceCode = document.text
-                val file = FileEditorManager.getInstance(project).selectedFiles[0]
-                val language = getExtensionLanguage(file.extension!!)!!
+            if(FileEditorManager.getInstance(project).selectedTextEditor != null) {
+                try {
+                    val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
+                    val document: Document = editor.document
+                    val sourceCode = document.text
+                    val file = FileEditorManager.getInstance(project).selectedFiles[0]
+                    val language = getExtensionLanguage(file.extension!!)!!
 
-                val parsedFunctions = parseFunctions(language, sourceCode)
+                    val parsedFunctions = parseFunctions(language, sourceCode)
 
-                val documentedFunctions: Float = parsedFunctions.count {
-                    it.docstring != null
-                }.toFloat()
+                    val documentedFunctions: Float = parsedFunctions.count {
+                        it.docstring != null
+                    }.toFloat()
 
-                percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
-                updateLabel()
-            }
-
-            catch(e: Exception){
-                printlnError("Error refreshing documentation ${e.stackTraceToString()}")
-                //TODO: Add more robust clear checking
-                clear()
+                    percentDocumented = (documentedFunctions / parsedFunctions.size) * 100
+                    updateLabel()
+                } catch (e: Exception) {
+                    printlnError("Error refreshing documentation ${e.stackTraceToString()}")
+                    //TODO: Add more robust clear checking
+                    clear()
+                }
             }
         })
 
