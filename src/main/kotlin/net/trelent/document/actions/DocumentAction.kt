@@ -17,19 +17,12 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.TextRange
 import com.jetbrains.rd.util.printlnError
-import net.trelent.document.actions.notifications.LoginNotificationAction
-import net.trelent.document.actions.notifications.SignupNotificationAction
-import net.trelent.document.actions.notifications.UpgradeLearnNotificationAction
-import net.trelent.document.actions.notifications.UpgradeNotificationAction
 import net.trelent.document.helpers.*
 import net.trelent.document.helpers.Function
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
-import org.jetbrains.annotations.Range
-import java.awt.Point
 
 class DocumentAction : AnAction() {
 
@@ -106,7 +99,7 @@ class DocumentAction : AnAction() {
                     }
 
                     // Get the docstring format
-                    val settings = TrelentSettingsState.getInstance()
+                    val settings = TrelentSettingsState.getInstance().settings
                     val format = getFormat(language, settings)
 
                     // Request a docstring
@@ -126,33 +119,6 @@ class DocumentAction : AnAction() {
                         if (errorType == null) {
                             showError(docstring.error, project)
                             return
-                        }
-
-                        when (errorType) {
-                            "exceeded_anonymous_quota" -> {
-                                showAnonymousUsageError(
-                                    "Please sign up for a free account to get an extra 50 docs/month. You've hit your anonymous usage limit!",
-                                    project
-                                )
-                            }
-
-                            "exceeded_free_quota" -> {
-                                showFreeUsageError(
-                                    "You have reached your usage limit. Please log in to Trelent to continue.",
-                                    project
-                                )
-                            }
-
-                            "exceeded_paid_quota" -> {
-                                showPaidUsageError(
-                                    "You have reached your usage limit. Please log in to Trelent to continue.",
-                                    project
-                                )
-                            }
-
-                            else -> {
-                                showError(docstring.error, project)
-                            }
                         }
 
                         return
@@ -206,8 +172,7 @@ class DocumentAction : AnAction() {
 
 }
 
-fun showError(message: String, project: Project)
-{
+fun showError(message: String, project: Project) {
     val errNotification = Notification(
         "Trelent Error Notification Group",
         "Error writing docstring",
@@ -217,66 +182,7 @@ fun showError(message: String, project: Project)
     Notifications.Bus.notify(errNotification, project)
 }
 
-fun showAnonymousUsageError(message: String, project: Project)
-{
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        "Usage limit exceeded",
-        message,
-        NotificationType.ERROR
-    )
-
-    // Add login and signup buttons to the notification
-    val loginAction = LoginNotificationAction("Login")
-    val signupAction = SignupNotificationAction("Sign up")
-
-    errNotification.addAction(loginAction)
-    errNotification.addAction(signupAction)
-
-    Notifications.Bus.notify(errNotification, project)
-}
-
-fun showFreeUsageError(message: String, project: Project)
-{
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        "Usage limit exceeded",
-        message,
-        NotificationType.ERROR
-    )
-
-    // Add login and signup buttons to the notification
-
-    val upgradeAction = UpgradeNotificationAction("Upgrade")
-    val upgradeLearnAction = UpgradeLearnNotificationAction("Learn More")
-
-    errNotification.addAction(upgradeAction)
-    errNotification.addAction(upgradeLearnAction)
-
-    Notifications.Bus.notify(errNotification, project)
-}
-
-fun showPaidUsageError(message: String, project: Project)
-{
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        "Usage limit exceeded",
-        message,
-        NotificationType.ERROR
-    )
-
-    // Add login and signup buttons to the notification
-    /*
-    val contactAction = ContactNotificationAction("Contact Us")
-
-    errNotification.addAction(contactAction)
-
-     */
-
-    Notifications.Bus.notify(errNotification, project)
-}
-
-fun getFormat(language: String, settings: TrelentSettingsState): String
+fun getFormat(language: String, settings: TrelentSettingsState.TrelentSettings): String
 {
     return when (language) {
         "csharp" -> {
