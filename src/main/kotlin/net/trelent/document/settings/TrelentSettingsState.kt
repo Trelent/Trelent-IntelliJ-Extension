@@ -32,13 +32,9 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
     var settings: TrelentSettings = TrelentSettings()
 
     data class TrelentSettings(
-        @Transient
         var csharpFormat: String = "xml",
-        @Transient
         var javaFormat: String = "javadoc",
-        @Transient
         var javascriptFormat: String = "jsdoc",
-        @Transient
         var pythonFormat: String = "rest",
         var numDocumented: Int = 0
     )
