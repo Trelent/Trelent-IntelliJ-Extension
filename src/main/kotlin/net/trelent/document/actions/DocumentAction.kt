@@ -17,6 +17,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.actions.notifications.LoginNotificationAction
 import net.trelent.document.actions.notifications.SignupNotificationAction
@@ -27,6 +28,7 @@ import net.trelent.document.helpers.Function
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
+import org.jetbrains.annotations.Range
 import java.awt.Point
 
 class DocumentAction : AnAction() {
@@ -156,20 +158,14 @@ class DocumentAction : AnAction() {
                         return
                     }
 
-                    // Get docstring and related metadata
-                    val docStringOffset = currentFunction.docstring_offset
-                    var docStringPoint: Point? = null;
-                    var docStringColumn: Int = 0;
-                    ApplicationManager.getApplication().invokeLater {
-                        docStringPoint = editor.offsetToXY(offset)
-                        docStringColumn = docStringPoint!!.x;
-                        val docstringLiteral = docstring.data?.docstring!!.split("\n")
-                        val docstringFirstLine = docstringLiteral[0]
-                        val restOfDocstring = docstringLiteral.subList(1, docstringLiteral.size).joinToString("\n")
 
-                        val docstringText =
-                            docstringFirstLine + ("\n" + restOfDocstring + "\n").prependIndent(" ".repeat(docStringColumn))
-                                .replaceFirst("^\\s++", "")
+                    ApplicationManager.getApplication().invokeLater {
+                        // Get docstring and related metadata
+                        val docStringOffset = currentFunction.docstring_offset
+                        val docStringColumn = editor.offsetToVisualPosition(docStringOffset).column;
+
+                        val docstringText = "\n" + (docstring.data!!.docstring.trim() + "\n").prependIndent(" ".repeat(docStringColumn))
+
 
                         // Insert the docstring
                         WriteCommandAction.runWriteCommandAction(project) {

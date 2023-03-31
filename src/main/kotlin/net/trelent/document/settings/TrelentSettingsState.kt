@@ -51,7 +51,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState> {
         )
         errNotification.addAction(object: NotificationAction("Join community") {
             override fun actionPerformed(e: AnActionEvent, notification: Notification) {
-                BrowserUtil.browse("https://discord.gg/trelent")
+                BrowserUtil.browse(DISCORD_LINK)
             }
 
         })
