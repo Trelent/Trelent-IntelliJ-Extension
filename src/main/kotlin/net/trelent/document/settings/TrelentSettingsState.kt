@@ -68,7 +68,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         }
     }
 
-    override fun getState(): TrelentSettings? {
+    override fun getState(): TrelentSettings {
         return settings
     }
 }
