@@ -20,6 +20,7 @@ import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.helpers.parseFunctions
+import net.trelent.document.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
 import java.awt.Color
 import java.awt.event.MouseAdapter
@@ -57,6 +58,13 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             override fun selectionChanged(event: FileEditorManagerEvent){
                     refreshDocumentation()
             }
+        })
+
+        project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
+            override fun documented(editor: Editor, language: String) {
+                externalRefresh(editor, language);
+            }
+
         })
         label = JLabel()
         label.icon = ICON

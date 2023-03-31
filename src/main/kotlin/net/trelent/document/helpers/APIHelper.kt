@@ -89,13 +89,13 @@ data class Docstring(
 data class Function(
     var body: String,
     var definition: String,
+    var definition_line: Int,
     var docstring: String?,
-    var docstring_point: Array<Int>,
     var docstring_offset: Int,
+    var docstring_range: Array<Int>,
     var name: String,
     var params: Array<String>,
-    var range: Array<Array<Int>>,
-    var offsets: Array<Int>,
+    var range: Array<Int>,
     var text: String
 )
 

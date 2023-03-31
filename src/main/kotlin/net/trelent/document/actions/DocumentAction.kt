@@ -17,10 +17,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.StatusBar
-import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.WindowManager
-import com.intellij.util.castSafelyTo
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.actions.notifications.LoginNotificationAction
 import net.trelent.document.actions.notifications.SignupNotificationAction
@@ -29,8 +25,9 @@ import net.trelent.document.actions.notifications.UpgradeNotificationAction
 import net.trelent.document.helpers.*
 import net.trelent.document.helpers.Function
 import net.trelent.document.settings.TrelentSettingsState
-import net.trelent.document.widgets.PercentDocumented.PercentDocumentedWidget
+import net.trelent.document.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
+import java.awt.Point
 
 class DocumentAction : AnAction() {
 
@@ -160,9 +157,16 @@ class DocumentAction : AnAction() {
                     }
 
                     // Get docstring and related metadata
-                    val docStringPoint = currentFunction.docstring_point
-                    val docStringColumn = docStringPoint[1]
-                    val docStringPosition = currentFunction.docstring_offset
+                    val docStringOffset = currentFunction.docstring_offset
+                    var docStringPoint: Point? = null;
+                    var docStringColumn: Int = 0;
+                    ApplicationManager.getApplication().runReadAction {
+                        docStringPoint = editor.offsetToXY(docStringOffset)
+                        docStringColumn = docStringPoint!!.x;
+                    }
+
+
+
 
 
 
@@ -177,20 +181,12 @@ class DocumentAction : AnAction() {
 
                     // Insert the docstring
                     WriteCommandAction.runWriteCommandAction(project) {
-                        document.insertString(docStringPosition, docstringText)
+                        document.insertString(docStringOffset, docstringText)
                     }
 
                     // Update docs progress
-                    val statusBar: StatusBar = WindowManager.getInstance().getStatusBar(project)
-                    val widget: StatusBarWidget? = statusBar.getWidget(PercentDocumentedWidget.WIDGET_ID)
-                    if(widget != null) {
-                        widget.castSafelyTo<PercentDocumentedWidget>()?.externalRefresh(editor, language)
-                    }
-                    else {
-                        println("Could not locate widget.")
-                    }
-                    println(widget == null)
-
+                    val publisher = project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
+                    publisher.documented(editor, language);
                 }
             }
             ProgressManager.getInstance().run(task)
@@ -204,12 +200,12 @@ class DocumentAction : AnAction() {
         val within: ArrayList<Function> = arrayListOf()
 
         functions.forEach{
-            if(it.offsets[0] <= offset && it.offsets[1] >= offset){
+            if(it.range[0] <= offset && it.range[1] >= offset){
                 within.add(it)
             }
         }
         val bestChoice = within.stream().min(Comparator.comparing{
-            it.offsets[1] - it.offsets[0]
+            it.range[1] - it.range[0]
         })
         if(bestChoice.isEmpty){
             return null
