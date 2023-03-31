@@ -164,8 +164,10 @@ class DocumentAction : AnAction() {
                         val docStringOffset = currentFunction.docstring_offset
                         val docStringColumn = editor.offsetToVisualPosition(docStringOffset).column;
 
-                        val docstringText = "\n" + (docstring.data!!.docstring.trim() + "\n").prependIndent(" ".repeat(docStringColumn))
-
+                        val docStringSplit = docstring.data!!.docstring.trim().split("\n");
+                        val docStringHead = docStringSplit[0];
+                        val docStringBody = (docStringSplit.subList(1, docStringSplit.size).joinToString("\n") + "\n").prependIndent(" ".repeat(docStringColumn))
+                        val docstringText = docStringHead + "\n" + docStringBody;
 
                         // Insert the docstring
                         WriteCommandAction.runWriteCommandAction(project) {
