@@ -16,29 +16,29 @@ import java.net.URLEncoder
 
 
 val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python", "typescript")
-private const val PARSE_CURRENT_FUNCTION_URL = "https://code-parsing-server.fly.dev/parse"
+private const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
 private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
-const val LOGIN_URL                          = "https://prod-api.trelent.net/auth/login?mode=login&port="
-const val LOGOUT_URL                         = "https://prod-api.trelent.net/auth/logout?port="
-const val SIGNUP_URL                         = "https://prod-api.trelent.net/auth/login?mode=signup&port="
-private const val GET_CHECKOUT_URL           = "https://prod-api.trelent.net/billing/checkout?billing_plan=1"
-private const val GET_PORTAL_URL             = "https://prod-api.trelent.net/billing/portal"
-private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
-private var CHECKOUT_RETURN_URL              = "https://prod-api.trelent.net/redirect?redirect_url="
-private var PORTAL_RETURN_URL                = "https://prod-api.trelent.net/redirect?redirect_url="
+//const val LOGIN_URL                          = "https://prod-api.trelent.net/auth/login?mode=login&port="
+//const val LOGOUT_URL                         = "https://prod-api.trelent.net/auth/logout?port="
+//const val SIGNUP_URL                         = "https://prod-api.trelent.net/auth/login?mode=signup&port="
+//private const val GET_CHECKOUT_URL           = "https://prod-api.trelent.net/billing/checkout?billing_plan=1"
+//private const val GET_PORTAL_URL             = "https://prod-api.trelent.net/billing/portal"
+//private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
+//private var CHECKOUT_RETURN_URL              = "https://prod-api.trelent.net/redirect?redirect_url="
+//private var PORTAL_RETURN_URL                = "https://prod-api.trelent.net/redirect?redirect_url="
 
 
 // Dev Api
-//const val LOGIN_URL                          = "https://dev-api.trelent.net/auth/login?mode=login&port="
-//const val LOGOUT_URL                         = "https://dev-api.trelent.net/auth/logout?port="
-//const val SIGNUP_URL                         = "https://dev-api.trelent.net/auth/login?mode=signup&port="
-//private const val GET_CHECKOUT_URL           = "https://dev-api.trelent.net/billing/checkout?billing_plan=1"
-//private const val GET_PORTAL_URL             = "https://dev-api.trelent.net/billing/portal"
-//private const val WRITE_DOCSTRING_URL        = "https://dev-api.trelent.net/docs/docstring"
-//private var CHECKOUT_RETURN_URL              = "https://dev-api.trelent.net/redirect?redirect_url="
-//private var PORTAL_RETURN_URL                = "https://dev-api.trelent.net/redirect?redirect_url="
+const val LOGIN_URL                          = "https://dev-api.trelent.net/auth/login?mode=login&port="
+const val LOGOUT_URL                         = "https://dev-api.trelent.net/auth/logout?port="
+const val SIGNUP_URL                         = "https://dev-api.trelent.net/auth/login?mode=signup&port="
+private const val GET_CHECKOUT_URL           = "https://dev-api.trelent.net/billing/checkout?billing_plan=1"
+private const val GET_PORTAL_URL             = "https://dev-api.trelent.net/billing/portal"
+private const val WRITE_DOCSTRING_URL        = "https://dev-api.trelent.net/docs/docstring"
+private var CHECKOUT_RETURN_URL              = "https://dev-api.trelent.net/redirect?redirect_url="
+private var PORTAL_RETURN_URL                = "https://dev-api.trelent.net/redirect?redirect_url="
 
 
 // Local Api
@@ -89,12 +89,12 @@ data class Docstring(
 data class Function(
     var body: String,
     var definition: String,
+    var definition_line: Int,
     var docstring: String?,
-    var docstring_point: Array<Int>,
     var docstring_offset: Int,
+    var docstring_range_offsets: Array<Int>?,
     var name: String,
     var params: Array<String>,
-    var range: Array<Array<Int>>,
     var offsets: Array<Int>,
     var text: String
 )
@@ -178,7 +178,7 @@ fun parseFunctions(language: String, source: String): Array<Function> {
     val body = Gson().toJson(req)
 
     try {
-        val returned = sendRequest(body, PARSE_CURRENT_FUNCTION_URL)
+        val returned = sendRequest(body, PARSE_URL)
         return Gson().fromJson(returned, Array<Function>::class.java)
     } catch (e: Exception) {
         printlnError(e.message.toString())

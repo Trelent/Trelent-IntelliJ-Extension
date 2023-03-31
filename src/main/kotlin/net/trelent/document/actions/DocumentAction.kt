@@ -17,10 +17,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.StatusBar
-import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.WindowManager
-import com.intellij.util.castSafelyTo
+import com.intellij.openapi.util.TextRange
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.actions.notifications.LoginNotificationAction
 import net.trelent.document.actions.notifications.SignupNotificationAction
@@ -29,8 +26,10 @@ import net.trelent.document.actions.notifications.UpgradeNotificationAction
 import net.trelent.document.helpers.*
 import net.trelent.document.helpers.Function
 import net.trelent.document.settings.TrelentSettingsState
-import net.trelent.document.widgets.PercentDocumented.PercentDocumentedWidget
+import net.trelent.document.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
+import org.jetbrains.annotations.Range
+import java.awt.Point
 
 class DocumentAction : AnAction() {
 
@@ -72,9 +71,9 @@ class DocumentAction : AnAction() {
                 )
                 return
             }
-
             val task = object : Task.Backgroundable(project, "Writing docstring") {
                 override fun run(indicator: ProgressIndicator) {
+
                     indicator.text = "Writing docstring..."
                     indicator.isIndeterminate = true
                     val parsedFunctions = parseFunctions(
@@ -159,38 +158,26 @@ class DocumentAction : AnAction() {
                         return
                     }
 
-                    // Get docstring and related metadata
-                    val docStringPoint = currentFunction.docstring_point
-                    val docStringColumn = docStringPoint[1]
-                    val docStringPosition = currentFunction.docstring_offset
 
+                    ApplicationManager.getApplication().invokeLater {
+                        // Get docstring and related metadata
+                        val docStringOffset = currentFunction.docstring_offset
+                        val docStringColumn = editor.offsetToVisualPosition(docStringOffset).column;
 
+                        val docStringSplit = docstring.data!!.docstring.trim().split("\n");
+                        val docStringHead = docStringSplit[0];
+                        val docStringBody = (docStringSplit.subList(1, docStringSplit.size).joinToString("\n") + "\n").prependIndent(" ".repeat(docStringColumn))
+                        val docstringText = docStringHead + "\n" + docStringBody;
 
+                        // Insert the docstring
+                        WriteCommandAction.runWriteCommandAction(project) {
+                            document.insertString(docStringOffset, docstringText)
+                        }
 
-                    val docstringLiteral = docstring.data?.docstring!!.split("\n")
-                    val docstringFirstLine = docstringLiteral[0]
-                    val restOfDocstring = docstringLiteral.subList(1, docstringLiteral.size).joinToString("\n")
-
-                    val docstringText =
-                        docstringFirstLine + ("\n" + restOfDocstring + "\n").prependIndent(" ".repeat(docStringColumn))
-                            .replaceFirst("^\\s++", "")
-
-                    // Insert the docstring
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        document.insertString(docStringPosition, docstringText)
+                        // Update docs progress
+                        val publisher = project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
+                        publisher.documented(editor, language);
                     }
-
-                    // Update docs progress
-                    val statusBar: StatusBar = WindowManager.getInstance().getStatusBar(project)
-                    val widget: StatusBarWidget? = statusBar.getWidget(PercentDocumentedWidget.WIDGET_ID)
-                    if(widget != null) {
-                        widget.castSafelyTo<PercentDocumentedWidget>()?.externalRefresh(editor, language)
-                    }
-                    else {
-                        println("Could not locate widget.")
-                    }
-                    println(widget == null)
-
                 }
             }
             ProgressManager.getInstance().run(task)
