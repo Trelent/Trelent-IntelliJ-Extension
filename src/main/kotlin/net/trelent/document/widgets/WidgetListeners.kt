@@ -6,17 +6,6 @@ import java.util.*
 
 public class WidgetListeners {
 
-    public interface TrelentDocumentationListener: EventListener {
-
-        companion object{
-            @JvmStatic val TRELENT_DOCUMENTATION_ACTION: Topic<TrelentDocumentationListener> = Topic(
-                TrelentDocumentationListener::class.java, Topic.BroadcastDirection.TO_PARENT);
-        }
-
-        fun updateDocState(state: Boolean);
-
-    }
-
     public interface DocumentedListener: EventListener {
         companion object{
             @JvmStatic val TRELENT_DOCUMENTED_ACTION: Topic<DocumentedListener> = Topic(

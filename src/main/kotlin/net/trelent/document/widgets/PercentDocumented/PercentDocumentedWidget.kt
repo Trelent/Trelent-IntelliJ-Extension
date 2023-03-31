@@ -148,8 +148,9 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         Thread{
             println("Refreshing documentation")
 
+            try{
             if(FileEditorManager.getInstance(project).selectedTextEditor != null) {
-                try {
+
                     val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
                     val document: Document = editor.document
                     val sourceCode = document.text
@@ -164,11 +165,11 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
                     percentDocumented = (documentedFunctions / parsedFunctions.size) * 100
                     updateLabel()
-                } catch (e: Exception) {
-                    printlnError("Error refreshing documentation ${e.stackTraceToString()}")
-                    //TODO: Add more robust clear checking
-                    clear()
-                }
+            }
+            } catch (e: Exception) {
+                printlnError("Error refreshing documentation ${e.stackTraceToString()}")
+                //TODO: Add more robust clear checking
+                clear()
             }
         })
 

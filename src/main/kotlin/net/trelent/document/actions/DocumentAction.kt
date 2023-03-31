@@ -69,9 +69,9 @@ class DocumentAction : AnAction() {
                 )
                 return
             }
-
             val task = object : Task.Backgroundable(project, "Writing docstring") {
                 override fun run(indicator: ProgressIndicator) {
+
                     indicator.text = "Writing docstring..."
                     indicator.isIndeterminate = true
                     val parsedFunctions = parseFunctions(
@@ -160,33 +160,26 @@ class DocumentAction : AnAction() {
                     val docStringOffset = currentFunction.docstring_offset
                     var docStringPoint: Point? = null;
                     var docStringColumn: Int = 0;
-                    ApplicationManager.getApplication().runReadAction {
-                        docStringPoint = editor.offsetToXY(docStringOffset)
+                    ApplicationManager.getApplication().invokeLater {
+                        docStringPoint = editor.offsetToXY(offset)
                         docStringColumn = docStringPoint!!.x;
+                        val docstringLiteral = docstring.data?.docstring!!.split("\n")
+                        val docstringFirstLine = docstringLiteral[0]
+                        val restOfDocstring = docstringLiteral.subList(1, docstringLiteral.size).joinToString("\n")
+
+                        val docstringText =
+                            docstringFirstLine + ("\n" + restOfDocstring + "\n").prependIndent(" ".repeat(docStringColumn))
+                                .replaceFirst("^\\s++", "")
+
+                        // Insert the docstring
+                        WriteCommandAction.runWriteCommandAction(project) {
+                            document.insertString(docStringOffset, docstringText)
+                        }
+
+                        // Update docs progress
+                        val publisher = project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
+                        publisher.documented(editor, language);
                     }
-
-
-
-
-
-
-
-                    val docstringLiteral = docstring.data?.docstring!!.split("\n")
-                    val docstringFirstLine = docstringLiteral[0]
-                    val restOfDocstring = docstringLiteral.subList(1, docstringLiteral.size).joinToString("\n")
-
-                    val docstringText =
-                        docstringFirstLine + ("\n" + restOfDocstring + "\n").prependIndent(" ".repeat(docStringColumn))
-                            .replaceFirst("^\\s++", "")
-
-                    // Insert the docstring
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        document.insertString(docStringOffset, docstringText)
-                    }
-
-                    // Update docs progress
-                    val publisher = project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
-                    publisher.documented(editor, language);
                 }
             }
             ProgressManager.getInstance().run(task)
@@ -200,12 +193,12 @@ class DocumentAction : AnAction() {
         val within: ArrayList<Function> = arrayListOf()
 
         functions.forEach{
-            if(it.range[0] <= offset && it.range[1] >= offset){
+            if(it.offsets[0] <= offset && it.offsets[1] >= offset){
                 within.add(it)
             }
         }
         val bestChoice = within.stream().min(Comparator.comparing{
-            it.range[1] - it.range[0]
+            it.offsets[1] - it.offsets[0]
         })
         if(bestChoice.isEmpty){
             return null

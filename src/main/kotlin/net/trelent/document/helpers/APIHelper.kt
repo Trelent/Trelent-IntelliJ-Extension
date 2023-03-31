@@ -16,7 +16,7 @@ import java.net.URLEncoder
 
 
 val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python", "typescript")
-private const val PARSE_CURRENT_FUNCTION_URL = "https://code-parsing-server.fly.dev/parse"
+private const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
 private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
@@ -92,10 +92,10 @@ data class Function(
     var definition_line: Int,
     var docstring: String?,
     var docstring_offset: Int,
-    var docstring_range: Array<Int>,
+    var docstring_range_offsets: Array<Int>?,
     var name: String,
     var params: Array<String>,
-    var range: Array<Int>,
+    var offsets: Array<Int>,
     var text: String
 )
 
@@ -178,7 +178,7 @@ fun parseFunctions(language: String, source: String): Array<Function> {
     val body = Gson().toJson(req)
 
     try {
-        val returned = sendRequest(body, PARSE_CURRENT_FUNCTION_URL)
+        val returned = sendRequest(body, PARSE_URL)
         return Gson().fromJson(returned, Array<Function>::class.java)
     } catch (e: Exception) {
         printlnError(e.message.toString())
