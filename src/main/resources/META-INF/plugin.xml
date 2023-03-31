@@ -21,12 +21,10 @@
                 id="net.trelent.document.settings.TrelentSettingsConfigurable"
                 displayName="Trelent Settings"
         />
-        <applicationService serviceImplementation="net.trelent.document.services.MyApplicationService"/>
         <applicationService serviceImplementation="net.trelent.document.settings.TrelentSettingsState"/>
         <notificationGroup id="Trelent Error Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Info Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Warning Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
-        <projectService serviceImplementation="net.trelent.document.services.MyProjectService"/>
         <statusBarWidgetFactory implementation="net.trelent.document.widgets.PercentDocumented.PercentDocumentedWidgetProvider"/>
 
     </extensions>
@@ -47,30 +45,6 @@
                 <add-to-group group-id="EditorPopupMenu"/>
                 <keyboard-shortcut keymap="$default" first-keystroke="alt D"/>
             </action>
-            <action id="net.trelent.document.actions.LoginAction"
-                    class="net.trelent.document.actions.LoginAction"
-                    text="Login to Trelent"
-                    description="Login to Trelent."
-                    icon="TrelentPluginIcons.DocumentActionIcon"
-            />
-            <action id="net.trelent.document.actions.LogoutAction"
-                    class="net.trelent.document.actions.LogoutAction"
-                    text="Logout from Trelent"
-                    description="Logout from Trelent."
-                    icon="TrelentPluginIcons.DocumentActionIcon"
-            />
-            <action id="net.trelent.document.actions.SignupAction"
-                    class="net.trelent.document.actions.SignupAction"
-                    text="Signup for Trelent"
-                    description="Signup for Trelent."
-                    icon="TrelentPluginIcons.DocumentActionIcon"
-            />
-            <action id="net.trelent.document.actions.BillingPortalAction"
-                    class="net.trelent.document.actions.BillingPortalAction"
-                    text="Open Billing Portal"
-                    description="Open billing portal."
-                    icon="TrelentPluginIcons.DocumentActionIcon"
-            />
             <add-to-group group-id="ToolsMenu"/>
         </group>
     </actions>

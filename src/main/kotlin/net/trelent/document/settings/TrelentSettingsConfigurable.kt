@@ -29,7 +29,7 @@ class TrelentSettingsConfigurable : Configurable {
     }
 
     override fun isModified(): Boolean {
-        val settings: TrelentSettingsState = TrelentSettingsState.getInstance()
+        val settings: TrelentSettingsState.TrelentSettings = TrelentSettingsState.getInstance().settings
         var modified: Boolean = !mySettingsComponent?.getCsharpFormat().equals(settings.csharpFormat)
         modified = modified or (mySettingsComponent?.getJavaFormat() !== settings.javaFormat)
         modified = modified or (mySettingsComponent?.getJavascriptFormat() !== settings.javascriptFormat)
@@ -38,7 +38,7 @@ class TrelentSettingsConfigurable : Configurable {
     }
 
     override fun apply() {
-        val settings: TrelentSettingsState = TrelentSettingsState.getInstance()
+        val settings: TrelentSettingsState.TrelentSettings = TrelentSettingsState.getInstance().settings
         settings.csharpFormat = mySettingsComponent?.getCsharpFormat()!!
         settings.javaFormat = mySettingsComponent?.getJavaFormat()!!
         settings.javascriptFormat = mySettingsComponent?.getJavascriptFormat()!!
@@ -46,7 +46,7 @@ class TrelentSettingsConfigurable : Configurable {
     }
 
     override fun reset() {
-        val settings: TrelentSettingsState = TrelentSettingsState.getInstance()
+        val settings: TrelentSettingsState.TrelentSettings = TrelentSettingsState.getInstance().settings
         mySettingsComponent?.setCSharpFormat(settings.csharpFormat)
         mySettingsComponent?.setJavaFormat(settings.javaFormat)
         mySettingsComponent?.setJavascriptFormat(settings.javascriptFormat)
