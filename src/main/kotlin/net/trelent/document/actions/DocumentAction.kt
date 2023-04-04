@@ -33,8 +33,6 @@ class DocumentAction : AnAction() {
     override fun actionPerformed(@NotNull e: AnActionEvent) {
 
         try {
-
-
             // Get the open project and editor, if there is one
             val project: Project = e.getRequiredData(CommonDataKeys.PROJECT)
             val editor: Editor? = e.getData(CommonDataKeys.EDITOR)
@@ -64,89 +62,24 @@ class DocumentAction : AnAction() {
                 )
                 return
             }
-            val task = object : Task.Backgroundable(project, "Writing docstring") {
-                override fun run(indicator: ProgressIndicator) {
 
-                    indicator.text = "Writing docstring..."
-                    indicator.isIndeterminate = true
-                    val parsedFunctions = parseFunctions(
-                        language,
-                        sourceCode
-                    )
+            val parsedFunctions = parseFunctions(language, sourceCode);
 
-                    var offset = 0
-                    ApplicationManager.getApplication().runReadAction {
-                        offset = cursor.offset
-                    }
-
-                    val currentFunction = getCurrentFunction(parsedFunctions, offset)
-                    if (currentFunction == null) {
-                        showError(
-                            "Your cursor is not inside a valid function. Please click inside the function body if you have not already.",
-                            project
-                        )
-                        return
-                    }
-
-                    // We got the current function!
-                    val funcName = currentFunction.name
-                    val funcParams = currentFunction.params
-                    val funcText = currentFunction.text
-
-                    //FIXME: Remove this when typescript support added in backend
-                    if(language == "typescript"){
-                        language = "javascript"
-                    }
-
-                    // Get the docstring format
-                    val settings = TrelentSettingsState.getInstance().settings
-                    val format = getFormat(language, settings)
-
-                    // Request a docstring
-                    val docstring = getDocstring(
-                        format,
-                        language,
-                        funcName,
-                        funcParams,
-                        "ext-intellij",
-                        funcText,
-                        userId
-                    )
-
-                    if (!docstring.successful) {
-                        val errorType = docstring.error_type
-
-                        if (errorType == null) {
-                            showError(docstring.error, project)
-                            return
-                        }
-
-                        return
-                    }
-
-
-                    ApplicationManager.getApplication().invokeLater {
-                        // Get docstring and related metadata
-                        val docStringOffset = currentFunction.docstring_offset
-                        val docStringColumn = editor.offsetToVisualPosition(docStringOffset).column;
-
-                        val docStringSplit = docstring.data!!.docstring.trim().split("\n");
-                        val docStringHead = docStringSplit[0];
-                        val docStringBody = (docStringSplit.subList(1, docStringSplit.size).joinToString("\n") + "\n").prependIndent(" ".repeat(docStringColumn))
-                        val docstringText = docStringHead + "\n" + docStringBody;
-
-                        // Insert the docstring
-                        WriteCommandAction.runWriteCommandAction(project) {
-                            document.insertString(docStringOffset, docstringText)
-                        }
-
-                        // Update docs progress
-                        val publisher = project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
-                        publisher.documented(editor, language);
-                    }
-                }
+            var offset = 0
+            ApplicationManager.getApplication().runReadAction {
+                offset = cursor.offset
             }
-            ProgressManager.getInstance().run(task)
+
+            val currentFunction = getCurrentFunction(parsedFunctions, offset)
+            if (currentFunction == null) {
+                showError(
+                    "Your cursor is not inside a valid function. Please click inside the function body if you have not already.",
+                    project
+                )
+                return
+            }
+
+            writeDocstringsFromFunctions(listOf(currentFunction), editor, project);
         }
         catch(e: Exception){
             printlnError("Error parsing: ${e.stackTraceToString()}")

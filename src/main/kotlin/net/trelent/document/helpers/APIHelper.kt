@@ -12,6 +12,7 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.project.Project
 import com.jetbrains.rd.util.printlnError
 import org.jetbrains.annotations.Nullable
+import java.util.*
 
 
 val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python", "typescript")
@@ -19,7 +20,7 @@ private const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
 private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
-private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
+//private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
 
 
 // Dev Api
@@ -27,7 +28,7 @@ private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/doc
 
 
 // Local Api
-//private const val WRITE_DOCSTRING_URL        = "http://localhost:8000/docs/docstring"
+private const val WRITE_DOCSTRING_URL        = "http://localhost:8000/docs/docstring"
 
 data class FunctionRequest(
     val function_code: String,
@@ -86,11 +87,13 @@ fun getDocstring(format: String, language: String, name: String, params: Array<S
     val req = DocstringRequest(format, FunctionRequest(snippet, name, params), language, sender, user)
     val body = Gson().toJson(req)
 
+    var returned: Optional<HttpResponse<String>> = Optional.empty();
     return try {
-        val returned = sendRequest(body, WRITE_DOCSTRING_URL)
-        Gson().fromJson(returned, DocstringResponse::class.java)
+        returned = Optional.of(sendRequest(body, WRITE_DOCSTRING_URL))
+        Gson().fromJson(returned.get().body(), DocstringResponse::class.java)
     } catch (e: Exception) {
-        DocstringResponse(null, e.message.toString(), "internal_error",false)
+        val errorType = if(returned.isPresent) returned.get().statusCode().toString() else "internal_error";
+        DocstringResponse(null, e.message.toString(), errorType,false)
     }
 }
 
@@ -110,7 +113,7 @@ fun parseFunctions(language: String, source: String): Array<Function> {
     val body = Gson().toJson(req)
 
     try {
-        val returned = sendRequest(body, PARSE_URL)
+        val returned = sendRequest(body, PARSE_URL).body()
         return Gson().fromJson(returned, Array<Function>::class.java)
     } catch (e: Exception) {
         printlnError(e.message.toString())
@@ -119,7 +122,7 @@ fun parseFunctions(language: String, source: String): Array<Function> {
     return arrayOf()
 }
 
-fun sendRequest(body: String, url: String, token: String = ""): String? {
+fun sendRequest(body: String, url: String, token: String = ""): HttpResponse<String> {
     val client = HttpClient.newBuilder().build()
     val request = HttpRequest.newBuilder()
         .uri(URI.create(url))
@@ -128,7 +131,7 @@ fun sendRequest(body: String, url: String, token: String = ""): String? {
         .version(HttpClient.Version.HTTP_1_1)
         .build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-    return response.body()
+    return response
 }
 
 fun sendAuthenticatedGetRequest(url: String, token: String = ""): String {
