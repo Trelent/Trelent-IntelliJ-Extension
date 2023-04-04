@@ -20,112 +20,121 @@ import kotlin.streams.toList
 
 fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, project: Project){
 
-    //TODO: error handling
-    val document: Document = editor.document
-    val sourceCode = document.text
-    val file = FileEditorManager.getInstance(project).selectedFiles[0]
-    var language = getExtensionLanguage(file.extension!!)!!
+    try {
 
-    val task = object : Task.Backgroundable(project, "Writing docstrings") {
-        override fun run(indicator: ProgressIndicator) {
+        val document: Document = editor.document
+        val file = FileEditorManager.getInstance(project).selectedFiles[0]
+        var language = getExtensionLanguage(file.extension!!)!!
 
-            indicator.text = "Writing docstrings..."
-            indicator.isIndeterminate = true
+        val task = object : Task.Backgroundable(project, "Writing docstrings") {
+            override fun run(indicator: ProgressIndicator) {
+
+                indicator.text = "Writing docstrings..."
+                indicator.isIndeterminate = true
 
 
-            //FIXME: Remove this when typescript support added in backend
-            if(language == "typescript"){
-                language = "javascript"
-            }
-
-            val userId = System.getProperty("user.name")
-
-            // Get the docstring format
-            val settings = TrelentSettingsState.getInstance().settings
-            val format = getFormat(language, settings);
-
-             val futures = functions.stream().map{
-                // We got the current function!
-                val funcName = it.name
-                val funcParams = it.params
-                val funcText = it.text
-                // Request a docstring
-                CompletableFuture.supplyAsync{
-                    getDocstring(
-                        format,
-                        language,
-                        funcName,
-                        funcParams,
-                        "ext-intellij",
-                        funcText,
-                        userId
-                    )
+                //FIXME: Remove this when typescript support added in backend
+                if (language == "typescript") {
+                    language = "javascript"
                 }
-            }.toList()
 
-            val docstrings: HashMap<Function, DocstringResponse> = hashMapOf();
+                val userId = System.getProperty("user.name")
 
-            futures.zip(functions).forEach{
-                try{
-                    val future = it.first
-                    val function = it.second;
-                    future.join();
-                    val docstring = future.get();
-                    if (!docstring.successful) {
-                        println(docstring.error_type);
+                // Get the docstring format
+                val settings = TrelentSettingsState.getInstance().settings
+                val format = getFormat(language, settings);
+
+                val futures = functions.stream().map {
+                    // We got the current function!
+                    val funcName = it.name
+                    val funcParams = it.params
+                    val funcText = it.text
+                    // Request a docstring
+                    CompletableFuture.supplyAsync {
+                        getDocstring(
+                            format,
+                            language,
+                            funcName,
+                            funcParams,
+                            "ext-intellij",
+                            funcText,
+                            userId
+                        )
                     }
-                    else{
-                        docstrings[function] = docstring;
-                    }
-                }
-                finally{
+                }.toList()
 
-                }
+                val docstrings: HashMap<Function, DocstringResponse> = hashMapOf();
 
-            };
+                futures.zip(functions).forEach {
+                    try {
+                        val future = it.first
+                        val function = it.second;
+                        future.join();
+                        val docstring = future.get();
+                        if (!docstring.successful) {
+                            println(docstring.error_type);
+                        } else {
+                            docstrings[function] = docstring;
+                        }
+                    } finally {
 
-            ApplicationManager.getApplication().invokeLater {
-
-                docstrings.forEach{
-                    val currentFunction = it.key;
-                    val docstring = it.value;
-                    // Get docstring and related metadata
-                    val docStringOffset = currentFunction.docstring_offset
-                    val docStringColumn = editor.offsetToVisualPosition(docStringOffset).column;
-
-                    val docStringSplit = docstring.data!!.docstring.trim().split("\n");
-                    val docStringHead = docStringSplit[0];
-                    val docStringBody = (docStringSplit.subList(1, docStringSplit.size).joinToString("\n") + "\n").prependIndent(" ".repeat(docStringColumn))
-                    val docstringText = docStringHead + "\n" + docStringBody;
-
-                    // Insert the docstring
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        document.insertString(docStringOffset, docstringText)
                     }
 
-                    // Update docs progress
-                    val publisher = project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
-                    publisher.documented(editor, language);
+                };
+
+                ApplicationManager.getApplication().invokeLater {
+
+                    docstrings.forEach {
+                        val currentFunction = it.key;
+                        val docstring = it.value;
+                        // Get docstring and related metadata
+                        val docStringOffset = currentFunction.docstring_offset
+                        val docStringColumn = editor.offsetToVisualPosition(docStringOffset).column;
+
+                        val docStringSplit = docstring.data!!.docstring.trim().split("\n");
+                        val docStringHead = docStringSplit[0];
+                        val docStringBody = (docStringSplit.subList(1, docStringSplit.size)
+                            .joinToString("\n") + "\n").prependIndent(" ".repeat(docStringColumn))
+                        val docstringText = docStringHead + "\n" + docStringBody;
+
+                        // Insert the docstring
+                        WriteCommandAction.runWriteCommandAction(project) {
+                            document.insertString(docStringOffset, docstringText)
+                        }
+
+                        // Update docs progress
+                        val publisher =
+                            project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
+                        publisher.documented(editor, language);
+                    }
+
+
                 }
-
-
             }
         }
+        ProgressManager.getInstance().run(task)
     }
-    ProgressManager.getInstance().run(task)
+    finally{
+
+    }
 
 }
 
 fun parseDocument(editor: Editor, project: Project): Array<Function> {
-    //TODO: Error handling
-    val document: Document = editor.document
-    val sourceCode = document.text
-    val file = FileEditorManager.getInstance(project).selectedFiles[0]
-    val language = getExtensionLanguage(file.extension!!)!!
+    return try{
+        val document: Document = editor.document
+        val sourceCode = document.text
+        val file = FileEditorManager.getInstance(project).selectedFiles[0]
+        val language = getExtensionLanguage(file.extension!!)!!
 
-    return parseFunctions(
-        language,
-        sourceCode
-    );
+        parseFunctions(
+            language,
+            sourceCode
+        );
+    }
+    catch(_: Exception){
+        arrayOf();
+    }
+
 
 }
