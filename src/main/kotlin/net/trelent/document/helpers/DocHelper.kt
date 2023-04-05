@@ -2,17 +2,14 @@ package net.trelent.document.helpers
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import net.trelent.document.actions.getFormat
-import net.trelent.document.actions.showError
 import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.widgets.WidgetListeners
