@@ -19,6 +19,7 @@ import com.intellij.ui.JBColor
 import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.getExtensionLanguage
+import net.trelent.document.helpers.parseDocument
 import net.trelent.document.helpers.parseFunctions
 import net.trelent.document.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
@@ -121,10 +122,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             println("Refreshing documentation")
 
             try{
-                val document: Document = editor.document
-                val sourceCode = document.text
 
-                val parsedFunctions = parseFunctions(language, sourceCode)
+                val parsedFunctions = parseDocument(editor, project, false)
 
                 val documentedFunctions: Float = parsedFunctions.count {
                     it.docstring != null
@@ -152,12 +151,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             if(FileEditorManager.getInstance(project).selectedTextEditor != null) {
 
                     val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
-                    val document: Document = editor.document
-                    val sourceCode = document.text
-                    val file = FileEditorManager.getInstance(project).selectedFiles[0]
-                    val language = getExtensionLanguage(file.extension!!)!!
 
-                    val parsedFunctions = parseFunctions(language, sourceCode)
+                    val parsedFunctions = parseDocument(editor, project, false)
 
                     val documentedFunctions: Float = parsedFunctions.count {
                         it.docstring != null

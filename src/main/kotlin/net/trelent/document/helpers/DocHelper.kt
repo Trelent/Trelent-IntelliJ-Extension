@@ -13,6 +13,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import net.trelent.document.actions.getFormat
 import net.trelent.document.actions.showError
+import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.widgets.WidgetListeners
 import java.util.concurrent.CompletableFuture
@@ -121,8 +122,8 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
 
 }
 
-fun parseDocument(editor: Editor, project: Project): Array<Function> {
-    return try{
+fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Array<Function> {
+    val functions = try{
         val document: Document = editor.document
         val sourceCode = document.text
         val file = FileEditorManager.getInstance(project).selectedFiles[0]
@@ -136,6 +137,13 @@ fun parseDocument(editor: Editor, project: Project): Array<Function> {
     catch(_: Exception){
         arrayOf();
     }
+
+    if(functions.isNotEmpty() && track){
+        val changeDetectionService = project.getService(ChangeDetectionService::class.java);
+        changeDetectionService.trackState(editor.document, functions.toList());
+
+    }
+    return functions;
 
 
 }

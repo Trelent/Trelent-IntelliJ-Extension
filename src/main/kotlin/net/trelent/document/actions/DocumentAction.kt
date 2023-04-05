@@ -63,7 +63,7 @@ class DocumentAction : AnAction() {
                 return
             }
 
-            val parsedFunctions = parseFunctions(language, sourceCode);
+            val parsedFunctions = parseDocument(editor, project);
 
             var offset = 0
             ApplicationManager.getApplication().runReadAction {

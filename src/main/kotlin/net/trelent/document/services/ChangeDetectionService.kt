@@ -13,7 +13,7 @@ class ChangeDetectionService {
 
     private val changedFunctions: HashMap<String, HashMap<String, Function>> = hashMapOf();
 
-    val LEVENSHTEIN_UPDATE_THRESHOLD = 50;
+    private val LEVENSHTEIN_UPDATE_THRESHOLD = 50;
 
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
@@ -38,8 +38,8 @@ class ChangeDetectionService {
         return updateThese;
 
     }
-    
-    private fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
+
+    fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val allFunctions = getHistory(doc).allFunctions;
 
         val returnObj: HashMap<String, ArrayList<Function>> = hashMapOf(Pair("new", arrayListOf()), Pair("deleted", arrayListOf()), Pair("updated", arrayListOf()));
@@ -91,6 +91,7 @@ class ChangeDetectionService {
         val funcId = getFuncID(func);
         docChanges[funcId] = func;
     }
+
     private fun deleteDocChange(doc: Document, func: Function){
         val funcID = getFuncID(func);
         val changes = getDocChanges(doc);
