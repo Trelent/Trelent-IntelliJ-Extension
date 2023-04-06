@@ -7,7 +7,18 @@ import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class ChangeDetectionService {
+interface ChangeDetectionService{
+    fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>>;
+
+    fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>>
+
+    fun getDocChanges(doc: Document): HashMap<String, Function>
+
+    fun getHistory(doc: Document): ChangeDetectionServiceImpl.DocumentState
+
+
+}
+class ChangeDetectionServiceImpl: ChangeDetectionService {
 
     private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
 
@@ -17,7 +28,7 @@ class ChangeDetectionService {
 
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
-    fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
+    override fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val trackID = validateDoc(doc);
 
         val updateThese = getChangedFunctions(doc, functions);
@@ -39,7 +50,7 @@ class ChangeDetectionService {
 
     }
 
-    fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
+    override fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val allFunctions = getHistory(doc).allFunctions;
 
         val returnObj: HashMap<String, ArrayList<Function>> = hashMapOf(Pair("new", arrayListOf()), Pair("deleted", arrayListOf()), Pair("updated", arrayListOf()));
@@ -98,12 +109,12 @@ class ChangeDetectionService {
         changes.remove(funcID);
     }
 
-    fun getDocChanges(doc: Document): HashMap<String, Function> {
+    override fun getDocChanges(doc: Document): HashMap<String, Function> {
         val trackID = validateDoc(doc);
         return changedFunctions[trackID]!!;
     }
 
-    fun getHistory(doc: Document): DocumentState {
+    override fun getHistory(doc: Document): DocumentState {
         val trackID = validateDoc(doc)
         return fileInfo[trackID]!!;
     }
