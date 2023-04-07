@@ -7,8 +7,12 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseDocument
+import net.trelent.document.helpers.writeDocstringsFromFunctions
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.settings.TrelentSettingsState.TrelentTag;
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 
 
 interface AutodocService{
@@ -38,34 +42,50 @@ class AutodocServiceImpl: Disposable {
             val editor = EditorFactory.getInstance().allEditors.find {
                 it.document == doc
             }!!;
-            val parsedFunctions = parseDocument(editor, editor.project!!);
+
+            parseDocument(editor, editor.project!!);
 
             //TODO: Apply highlights
 
-            val fileHistory = changeDetectionService.getHistory(doc).allFunctions;
+            changeDetectionService.getHistory(doc).allFunctions;
 
             if (updating.contains(doc)) {
                 return;
             }
             updating.add(doc);
 
-            var functionsToDocument = changeDetectionService.getDocChanges(doc);
+            val functionsToDocument = changeDetectionService.getDocChanges(doc);
 
             //Get function tags
 
             val taggedFunctions = getFunctionTags(functionsToDocument.values.toList());
 
-            
+            if(taggedFunctions.isEmpty()){
+                updating.remove(doc);
+                return;
+            }
+
+            val autoFunctions = taggedFunctions[TrelentTag.AUTO]!!;
+            writeDocstringsFromFunctions(autoFunctions, editor, editor.project!!);
 
         } finally {
-
+            //TODO: Highlight Functions
+            updating.remove(doc);
         }
 
 
     }
 
-    private fun getFunctionTags(functions: List<Function>): HashMap<Function, TrelentTag> {
-        val returnObj: HashMap<Function, TrelentTag> = hashMapOf();
+    private fun getFunctionTags(functions: List<Function>): Map<TrelentTag, List<Function>> {
+        val returnObj: EnumMap<TrelentTag, ArrayList<Function>> =
+            EnumMap(TrelentTag::class.java);
+
+        TrelentTag.values().forEach{
+            returnObj[it] = arrayListOf()
+        }
+
+        val mode = TrelentSettingsState.getInstance().settings.mode;
+        val regex = "${TrelentTag.AUTO}|${TrelentTag.HIGHLIGHT}|${TrelentTag.IGNORE}g".toRegex()
 
         functions.stream().forEach {
             var text = it.text;
@@ -73,29 +93,18 @@ class AutodocServiceImpl: Disposable {
                 text += it.docstring!!
             }
             //Get tag, and if can't find one, default to settings
-            val mode = TrelentSettingsState.getInstance().settings.mode;
-            val regex = "${TrelentTag.AUTO}|${TrelentTag.HIGHLIGHT}|${TrelentTag.IGNORE}g".toRegex()
-            returnObj[it] = try {
+            val tag = try {
                 when (regex.matchEntire(text)!!.value) {
-                    TrelentTag.AUTO.toString() -> {
-                        TrelentTag.AUTO;
-                    }
-
-                    TrelentTag.HIGHLIGHT.toString() -> {
-                        TrelentTag.HIGHLIGHT
-                    }
-
-                    TrelentTag.IGNORE.toString() -> {
-                        TrelentTag.IGNORE
-                    }
-
-                    else -> {
-                        mode
-                    }
+                    TrelentTag.AUTO.tag -> TrelentTag.AUTO
+                    TrelentTag.HIGHLIGHT.tag -> TrelentTag.HIGHLIGHT
+                    TrelentTag.IGNORE.tag -> TrelentTag.IGNORE
+                    else -> mode
                 }
             } catch (e: Exception) {
                 mode
             }
+
+            returnObj[tag]?.add(it);
 
         }
         return returnObj

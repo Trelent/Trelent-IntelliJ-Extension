@@ -48,7 +48,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         NONE(0),
     }
 
-    enum class TrelentTag(tag: String) {
+    enum class TrelentTag(val tag: String) {
         AUTO("@trelent-auto"),
         HIGHLIGHT("@trelent-highlight"),
         IGNORE("@trelent-ignore"),
