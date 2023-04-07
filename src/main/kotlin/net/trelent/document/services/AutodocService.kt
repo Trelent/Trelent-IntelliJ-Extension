@@ -1,10 +1,12 @@
 package net.trelent.document.services
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
+import kotlinx.coroutines.*
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseDocument
 import net.trelent.document.helpers.writeDocstringsFromFunctions
@@ -21,17 +23,25 @@ interface AutodocService{
 class AutodocServiceImpl: Disposable {
 
     val updating: HashSet<Document> = hashSetOf()
+    var job: Job? = null;
+
+    val DELAY = 500L;
 
     init {
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
-            override fun documentChanged(event: DocumentEvent) {
-                try {
-                    val changeDetectionService = ChangeDetectionService.getInstance()!!;
-                    changeDetectionService.updateFunctionRanges(event);
-                    super.documentChanged(event)
-                } finally {
-                }
+            override fun documentChanged(event: DocumentEvent) = try {
+                val changeDetectionService = ChangeDetectionService.getInstance()!!;
+                changeDetectionService.updateFunctionRanges(event);
 
+                if(job != null){
+                    job!!.cancel();
+                }
+                job = GlobalScope.launch(CoroutineScope(Job() + Dispatchers.IO).coroutineContext){
+                    delay(DELAY)
+                    updateDocstrings(event.document)
+                }
+                super.documentChanged(event)
+            } finally {
             }
         }, this)
     }
@@ -111,6 +121,7 @@ class AutodocServiceImpl: Disposable {
     }
 
     override fun dispose() {
+        job?.cancel();
     }
 
 }

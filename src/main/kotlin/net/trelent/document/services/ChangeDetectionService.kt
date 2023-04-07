@@ -6,21 +6,17 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.rd.createLifetime
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseDocument
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
+
 
 interface ChangeDetectionService: Disposable{
     fun trackState(doc: Document, functions: List<Function> = listOf()): HashMap<String, ArrayList<Function>>;
@@ -165,7 +161,39 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
     }
 
     override fun updateFunctionRanges(event: DocumentEvent) {
-        TODO("Not yet implemented")
+        val doc = event.document
+        val functions = getHistory(doc).allFunctions
+
+        val offsetDiff = event.newLength - event.oldLength;
+        val oldEndIndex = event.offset + event.oldLength;
+
+        val text = doc.text;
+
+        functions.forEach{function ->
+            val bottomOffset = function.offsets[1];
+
+            if(oldEndIndex <= bottomOffset){
+                if(function.docstring_range_offsets != null){
+                    val docRange = function.docstring_range_offsets!!;
+                    if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
+                    if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
+                }
+                if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
+                if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
+                if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
+            }
+
+            function.text = text.substring(function.offsets[0], function.offsets[1])
+            if(function.docstring_range_offsets != null){
+                function.docstring = text.substring(function.docstring_range_offsets!![0], function.docstring_range_offsets!![1])
+            }
+
+        }
+
+
+
+
+
     }
 
     private fun validateDoc(doc: Document): String {
