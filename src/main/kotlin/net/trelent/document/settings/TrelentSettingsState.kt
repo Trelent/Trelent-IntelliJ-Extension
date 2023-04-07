@@ -36,8 +36,16 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         var javaFormat: String = "javadoc",
         var javascriptFormat: String = "jsdoc",
         var pythonFormat: String = "rest",
-        var numDocumented: Int = 0
+        var numDocumented: Int = 0,
+        var threshold: AutodocThreshold = AutodocThreshold.NEUTRAL
     )
+
+    enum class AutodocThreshold(val num: Int){
+        PASSIVE(1250),
+        NEUTRAL(750),
+        AGGRESSIVE(250),
+        NONE(0),
+    }
 
     private fun showDiscordNotification(){
         val errNotification = Notification(

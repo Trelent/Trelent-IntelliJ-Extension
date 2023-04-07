@@ -1,14 +1,29 @@
 package net.trelent.document.services
 
+import com.intellij.AppTopics
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.fileEditor.FileDocumentManagerListener
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.rd.createLifetime
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import net.trelent.document.helpers.Function
+import net.trelent.document.helpers.parseDocument
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
 
-interface ChangeDetectionService{
-    fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>>;
+interface ChangeDetectionService: Disposable{
+    fun trackState(doc: Document, functions: List<Function> = listOf()): HashMap<String, ArrayList<Function>>;
 
     fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>>
 
@@ -16,6 +31,16 @@ interface ChangeDetectionService{
 
     fun getHistory(doc: Document): ChangeDetectionServiceImpl.DocumentState
 
+    fun updateFunctionRanges(event: DocumentEvent);
+
+    companion object{
+        fun getInstance(): ChangeDetectionService? {
+            return ApplicationManager.getApplication().getService(ChangeDetectionService::class.java);
+        }
+    }
+
+    override fun dispose(){
+    }
 
 }
 class ChangeDetectionServiceImpl: ChangeDetectionService {
@@ -28,6 +53,26 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
 
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
+    init{
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(AppTopics.FILE_DOCUMENT_SYNC, object: FileDocumentManagerListener{
+            override fun fileContentLoaded(file: VirtualFile, document: Document) {
+                try{
+                    ProjectManager.getInstance().openProjects.filter{
+                        FileEditorManager.getInstance(it).openFiles.contains(file);
+                    }
+                        .forEach{
+                            EditorFactory.getInstance().allEditors.filter{editor ->
+                                editor.document == document
+                            }.forEach{editor ->
+                                parseDocument(editor, it, true);
+                            }
+                        }
+
+                }
+                finally{}
+            }
+        });
+    }
     override fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val trackID = validateDoc(doc);
 
@@ -119,6 +164,10 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
         return fileInfo[trackID]!!;
     }
 
+    override fun updateFunctionRanges(event: DocumentEvent) {
+        TODO("Not yet implemented")
+    }
+
     private fun validateDoc(doc: Document): String {
         val trackID = getDocID(doc);
         if(!fileInfo.containsKey(trackID)){
@@ -129,6 +178,8 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
         }
         return trackID;
     }
+
+
 
     private fun getDocID(doc: Document): String {
         val input = FileDocumentManager.getInstance().getFile(doc)?.path
@@ -142,4 +193,6 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
         return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
 
     }
+
+
 }

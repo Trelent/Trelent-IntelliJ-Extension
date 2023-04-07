@@ -59,6 +59,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             override fun selectionChanged(event: FileEditorManagerEvent){
                     refreshDocumentation()
             }
+
         })
 
         project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
