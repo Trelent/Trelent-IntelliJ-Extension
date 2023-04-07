@@ -1,7 +1,6 @@
 package net.trelent.document.services
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
@@ -18,9 +17,10 @@ import kotlin.collections.HashSet
 
 
 interface AutodocService{
-
+    fun updateDocstrings(doc: Document);
+    
 }
-class AutodocServiceImpl: Disposable {
+class AutodocServiceImpl: Disposable, AutodocService {
 
     val updating: HashSet<Document> = hashSetOf()
     var job: Job? = null;
@@ -46,7 +46,7 @@ class AutodocServiceImpl: Disposable {
         }, this)
     }
 
-    fun updateDocstrings(doc: Document) {
+    override fun updateDocstrings(doc: Document) {
         try {
             val changeDetectionService = ChangeDetectionService.getInstance()!!
             val editor = EditorFactory.getInstance().allEditors.find {
