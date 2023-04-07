@@ -7,6 +7,8 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseDocument
+import net.trelent.document.settings.TrelentSettingsState
+import net.trelent.document.settings.TrelentSettingsState.TrelentTag;
 
 
 interface AutodocService{
@@ -16,24 +18,24 @@ class AutodocServiceImpl: Disposable {
 
     val updating: HashSet<Document> = hashSetOf()
 
-    init{
-        EditorFactory.getInstance().eventMulticaster.addDocumentListener(object: DocumentListener{
+    init {
+        EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
             override fun documentChanged(event: DocumentEvent) {
-                try{
+                try {
                     val changeDetectionService = ChangeDetectionService.getInstance()!!;
                     changeDetectionService.updateFunctionRanges(event);
                     super.documentChanged(event)
+                } finally {
                 }
-                finally{}
 
             }
         }, this)
     }
 
-    fun updateDocstrings(doc: Document){
-        try{
+    fun updateDocstrings(doc: Document) {
+        try {
             val changeDetectionService = ChangeDetectionService.getInstance()!!
-            val editor = EditorFactory.getInstance().allEditors.find{
+            val editor = EditorFactory.getInstance().allEditors.find {
                 it.document == doc
             }!!;
             val parsedFunctions = parseDocument(editor, editor.project!!);
@@ -42,7 +44,7 @@ class AutodocServiceImpl: Disposable {
 
             val fileHistory = changeDetectionService.getHistory(doc).allFunctions;
 
-            if(updating.contains(doc)){
+            if (updating.contains(doc)) {
                 return;
             }
             updating.add(doc);
@@ -53,44 +55,46 @@ class AutodocServiceImpl: Disposable {
 
             val taggedFunctions = getFunctionTags(functionsToDocument.values.toList());
 
+            
 
-
-        }finally{
+        } finally {
 
         }
 
 
-
     }
 
-    private fun getFunctionTags(functions: List<Function>): HashMap<Function, TrelentTag>{
+    private fun getFunctionTags(functions: List<Function>): HashMap<Function, TrelentTag> {
         val returnObj: HashMap<Function, TrelentTag> = hashMapOf();
 
-        functions.stream().forEach{
+        functions.stream().forEach {
             var text = it.text;
-            if(it.docstring != null){
+            if (it.docstring != null) {
                 text += it.docstring!!
             }
-
+            //Get tag, and if can't find one, default to settings
+            val mode = TrelentSettingsState.getInstance().settings.mode;
             val regex = "${TrelentTag.AUTO}|${TrelentTag.HIGHLIGHT}|${TrelentTag.IGNORE}g".toRegex()
-            returnObj[it] = try{
-                 when(regex.matchEntire(text)!!.value){
+            returnObj[it] = try {
+                when (regex.matchEntire(text)!!.value) {
                     TrelentTag.AUTO.toString() -> {
                         TrelentTag.AUTO;
                     }
+
                     TrelentTag.HIGHLIGHT.toString() -> {
                         TrelentTag.HIGHLIGHT
                     }
+
                     TrelentTag.IGNORE.toString() -> {
                         TrelentTag.IGNORE
                     }
+
                     else -> {
-                        TrelentTag.NONE
+                        mode
                     }
                 }
-            }
-            catch(e: Exception){
-                TrelentTag.NONE
+            } catch (e: Exception) {
+                mode
             }
 
         }
@@ -100,11 +104,4 @@ class AutodocServiceImpl: Disposable {
     override fun dispose() {
     }
 
-}
-
-enum class TrelentTag(s: String) {
-    AUTO("@trelent-auto"),
-    HIGHLIGHT("@trelent-highlight"),
-    IGNORE("@trelent-ignore"),
-    NONE("")
 }

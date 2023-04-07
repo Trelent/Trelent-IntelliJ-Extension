@@ -37,7 +37,8 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         var javascriptFormat: String = "jsdoc",
         var pythonFormat: String = "rest",
         var numDocumented: Int = 0,
-        var threshold: AutodocThreshold = AutodocThreshold.NEUTRAL
+        var threshold: AutodocThreshold = AutodocThreshold.NEUTRAL,
+        var mode: TrelentTag = TrelentTag.HIGHLIGHT
     )
 
     enum class AutodocThreshold(val num: Int){
@@ -45,6 +46,13 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         NEUTRAL(750),
         AGGRESSIVE(250),
         NONE(0),
+    }
+
+    enum class TrelentTag(tag: String) {
+        AUTO("@trelent-auto"),
+        HIGHLIGHT("@trelent-highlight"),
+        IGNORE("@trelent-ignore"),
+        NONE("")
     }
 
     private fun showDiscordNotification(){

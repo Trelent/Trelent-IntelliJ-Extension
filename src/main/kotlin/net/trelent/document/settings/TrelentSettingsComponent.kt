@@ -18,6 +18,7 @@ class TrelentSettingsComponent {
     private val javaFormat = JBList("javadoc")
     private val javascriptFormat = JBList("jsdoc")
     private val pythonFormat = JBList("rest", "google", "numpy")
+    private val autodocMode = JBList("Enable Per-Function", "Enable Globally", "Maintain Docstrings")
     private val autodocThreshold = JBList("Aggressive", "Neutral", "Passive")
 
     init {
@@ -26,6 +27,7 @@ class TrelentSettingsComponent {
             .addLabeledComponent("Java docstring format", javaFormat, 10)
             .addLabeledComponent("JavaScript docstring format", javascriptFormat, 10)
             .addLabeledComponent("Python docstring format", pythonFormat, 10)
+            .addLabeledComponent("Autodoc mode", autodocMode, 10)
             .addLabeledComponent("Autodoc threshold", autodocThreshold, 10)
             .addComponentFillVertically(JPanel(), 0)
             .panel
@@ -82,5 +84,14 @@ class TrelentSettingsComponent {
 
     fun setAutodocThreshold(@NotNull newText: String?){
         autodocThreshold.setSelectedValue(newText, true);
+    }
+
+    @NotNull
+    fun getAutodocMode(): String {
+        return autodocMode.selectedValue;
+    }
+
+    fun setAutodocMode(@NotNull newText: String?){
+        autodocMode.setSelectedValue(newText, true);
     }
 }
