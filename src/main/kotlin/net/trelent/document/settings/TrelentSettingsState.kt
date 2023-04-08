@@ -10,6 +10,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import net.trelent.document.widgets.WidgetListeners
 
@@ -80,7 +81,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         private val DOC_THRESHOLD = 10;
         private val DISCORD_LINK = "https://discord.gg/trelent"
         fun getInstance(): TrelentSettingsState {
-            return ApplicationManager.getApplication().getService(TrelentSettingsState::class.java)
+            return service<TrelentSettingsState>()
         }
     }
 

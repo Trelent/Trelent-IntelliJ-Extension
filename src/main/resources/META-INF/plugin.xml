@@ -22,11 +22,18 @@
                 displayName="Trelent Settings"
         />
         <applicationService serviceImplementation="net.trelent.document.settings.TrelentSettingsState"/>
+        <applicationService serviceImplementation="net.trelent.document.services.AutodocService" preload="true"/>
+        <applicationService serviceImplementation="net.trelent.document.services.ChangeDetectionService" preload="true"/>
         <notificationGroup id="Trelent Error Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Info Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Warning Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <statusBarWidgetFactory implementation="net.trelent.document.widgets.PercentDocumented.PercentDocumentedWidgetProvider"/>
-
+        <additionalTextAttributes
+                scheme="Default"
+                file="colorSchemes/TrelentThemeDefault.xml"/>
+        <additionalTextAttributes
+                scheme="Darcula"
+                file="colorSchemes/TrelentThemeDracula.xml"/>
     </extensions>
 
     <applicationListeners>

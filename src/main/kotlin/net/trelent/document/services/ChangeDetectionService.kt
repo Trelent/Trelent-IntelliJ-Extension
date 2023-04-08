@@ -3,6 +3,8 @@ package net.trelent.document.services
 import com.intellij.AppTopics
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
@@ -13,33 +15,33 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseDocument
+import net.trelent.document.services.ChangeDetectionService.Companion.getDocID
+import net.trelent.document.services.ChangeDetectionService.Companion.getFuncID
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
 
 
-interface ChangeDetectionService: Disposable{
-    fun trackState(doc: Document, functions: List<Function> = listOf()): HashMap<String, ArrayList<Function>>;
-
-    fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>>
-
-    fun getDocChanges(doc: Document): HashMap<String, Function>
-
-    fun getHistory(doc: Document): ChangeDetectionServiceImpl.DocumentState
-
-    fun updateFunctionRanges(event: DocumentEvent);
-
+class ChangeDetectionService: Disposable{
     companion object{
-        fun getInstance(): ChangeDetectionService? {
-            return ApplicationManager.getApplication().getService(ChangeDetectionService::class.java);
+        fun getInstance(): ChangeDetectionService {
+            return service<ChangeDetectionService>()
+        }
+
+        fun getDocID(doc: Document): String {
+            val input = FileDocumentManager.getInstance().getFile(doc)?.path
+            val md = MessageDigest.getInstance("MD5")
+            return BigInteger(1, md.digest(input?.toByteArray())).toString(16).padStart(32, '0')
+        }
+
+        fun getFuncID(func: Function): String {
+            val input = func.offsets[0].toString();
+            val md = MessageDigest.getInstance("MD5")
+            return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
+
         }
     }
 
-    override fun dispose(){
-    }
-
-}
-class ChangeDetectionServiceImpl: ChangeDetectionService {
 
     private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
 
@@ -50,6 +52,7 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
     init{
+        println("Change detection")
         ApplicationManager.getApplication().messageBus.connect(this).subscribe(AppTopics.FILE_DOCUMENT_SYNC, object: FileDocumentManagerListener{
             override fun fileContentLoaded(file: VirtualFile, document: Document) {
                 try{
@@ -69,7 +72,7 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
             }
         });
     }
-    override fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
+     fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val trackID = validateDoc(doc);
 
         val updateThese = getChangedFunctions(doc, functions);
@@ -91,7 +94,7 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
 
     }
 
-    override fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
+    fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val allFunctions = getHistory(doc).allFunctions;
 
         val returnObj: HashMap<String, ArrayList<Function>> = hashMapOf(Pair("new", arrayListOf()), Pair("deleted", arrayListOf()), Pair("updated", arrayListOf()));
@@ -122,7 +125,7 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
             val funcPair = it.value;
             if(funcPair.containsKey("old")){
                 if(funcPair.containsKey("new")){
-                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >=LEVENSHTEIN_UPDATE_THRESHOLD){
+                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >= LEVENSHTEIN_UPDATE_THRESHOLD){
                         returnObj["updated"]?.add(funcPair["new"]!!);
                     }
                 }
@@ -150,17 +153,17 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
         changes.remove(funcID);
     }
 
-    override fun getDocChanges(doc: Document): HashMap<String, Function> {
+    fun getDocChanges(doc: Document): HashMap<String, Function> {
         val trackID = validateDoc(doc);
         return changedFunctions[trackID]!!;
     }
 
-    override fun getHistory(doc: Document): DocumentState {
+    fun getHistory(doc: Document): DocumentState {
         val trackID = validateDoc(doc)
         return fileInfo[trackID]!!;
     }
 
-    override fun updateFunctionRanges(event: DocumentEvent) {
+    fun updateFunctionRanges(event: DocumentEvent) {
         val doc = event.document
         val functions = getHistory(doc).allFunctions
 
@@ -207,19 +210,8 @@ class ChangeDetectionServiceImpl: ChangeDetectionService {
         return trackID;
     }
 
-
-
-    private fun getDocID(doc: Document): String {
-        val input = FileDocumentManager.getInstance().getFile(doc)?.path
-        val md = MessageDigest.getInstance("MD5")
-        return BigInteger(1, md.digest(input?.toByteArray())).toString(16).padStart(32, '0')
-    }
-
-    private fun getFuncID(func: Function): String {
-        val input = func.offsets[0].toString();
-        val md = MessageDigest.getInstance("MD5")
-        return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
-
+    override fun dispose() {
+        TODO("Not yet implemented")
     }
 
 

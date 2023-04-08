@@ -2,6 +2,7 @@ package net.trelent.document.helpers
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -136,7 +137,7 @@ fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Arra
     }
 
     if(functions.isNotEmpty() && track){
-        val changeDetectionService = project.getService(ChangeDetectionService::class.java);
+        val changeDetectionService = service<ChangeDetectionService>();
         changeDetectionService.trackState(editor.document, functions.toList());
 
     }

@@ -10,9 +10,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.getLatestVersion
+import net.trelent.document.services.AutodocService
+import net.trelent.document.services.ChangeDetectionService
 
 internal class MyProjectManagerListener : ProjectManagerListener {
     override fun projectOpened(project: Project) {
+
 
         // Check if there is a new version available
         var currentVersion = "1.8.7"
