@@ -13,7 +13,7 @@ import com.intellij.openapi.project.Project
 import net.trelent.document.actions.getFormat
 import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.settings.TrelentSettingsState
-import net.trelent.document.widgets.WidgetListeners
+import net.trelent.document.ui.widgets.WidgetListeners
 import java.util.concurrent.CompletableFuture
 import kotlin.streams.toList
 

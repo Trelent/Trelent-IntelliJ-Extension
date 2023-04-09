@@ -1,8 +1,7 @@
-package net.trelent.document.widgets.PercentDocumented
+package net.trelent.document.ui.widgets.PercentDocumented
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
@@ -18,10 +17,8 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
-import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.helpers.parseDocument
-import net.trelent.document.helpers.parseFunctions
-import net.trelent.document.widgets.WidgetListeners
+import net.trelent.document.ui.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
 import java.awt.Color
 import java.awt.event.MouseAdapter

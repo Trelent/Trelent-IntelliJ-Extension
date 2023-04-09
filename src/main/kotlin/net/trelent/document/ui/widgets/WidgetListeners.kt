@@ -1,4 +1,4 @@
-package net.trelent.document.widgets
+package net.trelent.document.ui.widgets
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.util.messages.Topic

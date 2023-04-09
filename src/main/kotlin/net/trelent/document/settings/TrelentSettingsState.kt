@@ -12,7 +12,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
-import net.trelent.document.widgets.WidgetListeners
+import net.trelent.document.ui.widgets.WidgetListeners
 
 
 @State(name = "net.trelent.document.settings.TrelentSettingsState", storages = [Storage("TrelentSettings.xml")])
