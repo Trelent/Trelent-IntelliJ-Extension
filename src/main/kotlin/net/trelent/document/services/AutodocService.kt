@@ -18,6 +18,8 @@ import net.trelent.document.helpers.parseDocument
 import net.trelent.document.helpers.writeDocstringsFromFunctions
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.settings.TrelentSettingsState.TrelentTag;
+import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
+import net.trelent.document.ui.highlighters.TrelentGutterRenderer
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
@@ -26,6 +28,7 @@ class AutodocService: Disposable {
 
     private val updating: HashSet<Document> = hashSetOf()
     private val highlights: HashMap<String, ArrayList<RangeHighlighter>> = hashMapOf();
+    private val operations: HashMap<String, ArrayList<TrelentAutodocHighlighter>> = hashMapOf()
     var job: Job? = null;
 
     val DELAY = 500L;
@@ -156,12 +159,38 @@ class AutodocService: Disposable {
     fun resetHighlights(editor: Editor, functions: List<Function>){
         ApplicationManager.getApplication().invokeLater{
             clearHighlights(editor);
+            clearOperations(editor)
             val highlights = getHighlights(editor, functions);
+
             val docID = ChangeDetectionService.getDocID(editor.document);
 
+
             this.highlights[docID] = highlights;
+
+            createOperations(editor, functions);
         }
 
+    }
+
+    private fun createOperations(editor: Editor, functions: List<Function>){
+        val ops: ArrayList<TrelentAutodocHighlighter> = arrayListOf();
+        val docID = ChangeDetectionService.getDocID(editor.document);
+        functions.forEach{function ->
+            ops.add(TrelentAutodocHighlighter.TrelentAccept(editor, function))
+            ops.add(TrelentAutodocHighlighter.TrelentIgnore(editor, function))
+        }
+
+        operations[docID] = ops;
+
+    }
+
+    private fun clearOperations(editor: Editor){
+        val docID = ChangeDetectionService.getDocID(editor.document);
+
+        operations[docID]?.forEach{ gutterIcon ->
+            gutterIcon.dispose();
+        }
+        operations.remove(docID);
     }
 
     private fun clearHighlights(editor: Editor){

@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
+import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
 
 
 const val LAYER_PRIORITY_STEP = 5 // BASE_LAYER..LINE_MARKER_LAYER
@@ -44,6 +45,10 @@ fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHig
         }
     }
     return highlighters;
+}
+
+private fun getTrelentAutodocHighlighter(highlighter: RangeHighlighter){
+
 }
 private fun getLayer(layer: Int, layerPriority: Int): Int {
     return layer + layerPriority * LAYER_PRIORITY_STEP
