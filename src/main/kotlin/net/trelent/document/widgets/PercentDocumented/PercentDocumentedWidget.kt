@@ -46,19 +46,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     private var label: JLabel
 
     init{
-        VirtualFileManager.getInstance().addVirtualFileListener(object : VirtualFileAdapter() {
-            override fun contentsChanged(@NotNull event: VirtualFileEvent) {
-                if (event.isFromSave || event.isFromRefresh) {
-                    refreshDocumentation()
-                }
-            }
-        })
 
-        project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object: FileEditorManagerListener {
-            override fun selectionChanged(event: FileEditorManagerEvent){
-                    refreshDocumentation()
-            }
-        })
+
 
         project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
             override fun documented(editor: Editor, language: String) {
@@ -79,14 +68,20 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     private fun updateLabel(): JLabel{
-        val rounder = DecimalFormat("#.##")
-        rounder.roundingMode = RoundingMode.DOWN
-        label.text = "File ${rounder.format(percentDocumented)}% Documented"
-        val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
-        else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
-        label.background = background
-        label.isVisible = percentDocumented >= 0
+        try{
+            val rounder = DecimalFormat("#.##")
+            rounder.roundingMode = RoundingMode.DOWN
+            label.text = "File ${rounder.format(percentDocumented)}% Documented"
+            val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
+            else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
+            label.background = background
+            label.isVisible = percentDocumented >= 0
+        }
+        finally{
+
+        }
         return label
+
     }
     override fun ID(): String {
        return WIDGET_ID
