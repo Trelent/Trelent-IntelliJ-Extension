@@ -119,6 +119,7 @@ fun parseFunctions(language: String, source: String): Array<Function> {
         printlnError(e.message.toString())
     }
 
+
     return arrayOf()
 }
 

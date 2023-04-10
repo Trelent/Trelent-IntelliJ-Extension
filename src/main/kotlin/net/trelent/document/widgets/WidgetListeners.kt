@@ -16,5 +16,14 @@ class WidgetListeners {
         fun documented(editor: Editor, language: String);
     }
 
+    interface ParseListener: EventListener {
+        companion object{
+            @JvmStatic val TRELENT_PARSE_ACTION: Topic<ParseListener> = Topic(
+                ParseListener::class.java, Topic.BroadcastDirection.TO_PARENT);
+        }
+
+        fun parse(editor: Editor, language: String, functions: List<Function>);
+    }
+
 
 }
