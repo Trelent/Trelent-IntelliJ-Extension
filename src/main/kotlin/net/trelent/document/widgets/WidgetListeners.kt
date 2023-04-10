@@ -2,6 +2,7 @@ package net.trelent.document.widgets
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.util.messages.Topic
+import net.trelent.document.helpers.Function
 import java.util.*
 
 class WidgetListeners {
