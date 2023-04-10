@@ -17,17 +17,8 @@ const val DEFAULT_LAYER = HighlighterLayer.SELECTION - 102
 fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHighlighter> {
     val highlighters: ArrayList<RangeHighlighter> = arrayListOf()
 
-    val doc = editor.document
     ApplicationManager.getApplication().invokeLater{
         functions.forEach{function ->
-
-            val firstLine = doc.getLineNumber(function.offsets[0])
-            val lastLine = doc.getLineNumber(function.offsets[1])
-            val isEmptyRange = firstLine == lastLine;
-            val isFirstLine =  firstLine == 0;
-            val isLastLine = lastLine == doc.lineCount;
-
-            val offsets = DiffUtil.getLinesRange(doc, firstLine, lastLine)
 
             val start = function.offsets[0]
             val end = function.offsets[1]
@@ -39,6 +30,11 @@ fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHig
 
             ApplicationManager.getApplication().runReadAction{
                 val highlighter = editor.markupModel.addRangeHighlighter( start, end, getLayer(DEFAULT_LAYER, 10), attributesKey.defaultAttributes, HighlighterTargetArea.LINES_IN_RANGE)
+                highlighter.errorStripeTooltip = object {
+                    override fun toString(): String {
+                        return "Trelent: Outdated docstring"
+                    }
+                }
                 highlighters.add(highlighter)
             }
 
@@ -47,9 +43,6 @@ fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHig
     return highlighters;
 }
 
-private fun getTrelentAutodocHighlighter(highlighter: RangeHighlighter){
-
-}
 private fun getLayer(layer: Int, layerPriority: Int): Int {
     return layer + layerPriority * LAYER_PRIORITY_STEP
 }

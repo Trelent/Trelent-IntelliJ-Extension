@@ -16,6 +16,7 @@ import javax.swing.Icon
 abstract class TrelentAutodocHighlighter(editor: Editor, offset: Int) : Disposable {
     var highlighter: RangeHighlighter;
 
+
     init {
         highlighter = editor.markupModel.addRangeHighlighter(null, offset, offset, HighlighterLayer.ADDITIONAL_SYNTAX,
             HighlighterTargetArea.LINES_IN_RANGE)
@@ -58,7 +59,7 @@ abstract class TrelentAutodocHighlighter(editor: Editor, offset: Int) : Disposab
         }
         override fun createRenderer(): GutterIconRenderer {
             val icon: Icon = TrelentPluginIcons.DocumentActionIcon;
-            return object :TrelentGutterRenderer(icon, "Accept Changes"){
+            return object :TrelentGutterRenderer(icon, "Trelent: Generate new docstring"){
                 override fun handleMouseClick() {
                     println("Mouse clicked! (Accept)")
                 }
