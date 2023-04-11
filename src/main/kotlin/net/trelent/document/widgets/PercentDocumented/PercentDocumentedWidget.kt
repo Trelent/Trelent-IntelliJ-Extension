@@ -5,12 +5,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFileAdapter
-import com.intellij.openapi.vfs.VirtualFileEvent
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.impl.status.EditorBasedWidget
@@ -18,10 +13,10 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
+import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.helpers.parseFunctions
 import net.trelent.document.widgets.WidgetListeners
-import org.jetbrains.annotations.NotNull
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -46,18 +41,12 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     private var label: JLabel
 
     init{
-        VirtualFileManager.getInstance().addVirtualFileListener(object : VirtualFileAdapter() {
-            override fun contentsChanged(@NotNull event: VirtualFileEvent) {
-                if (event.isFromSave || event.isFromRefresh) {
-                    refreshDocumentation()
-                }
-            }
-        })
 
-        project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object: FileEditorManagerListener {
-            override fun selectionChanged(event: FileEditorManagerEvent){
-                    refreshDocumentation()
+        project.messageBus.connect(this).subscribe(WidgetListeners.ParseListener.TRELENT_PARSE_ACTION, object: WidgetListeners.ParseListener {
+            override fun parse(editor: Editor, language: String, functions: List<Function>) {
+                externalRefresh(editor, language, functions);
             }
+
         })
 
         project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
@@ -79,14 +68,20 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     private fun updateLabel(): JLabel{
-        val rounder = DecimalFormat("#.##")
-        rounder.roundingMode = RoundingMode.DOWN
-        label.text = "File ${rounder.format(percentDocumented)}% Documented"
-        val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
-        else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
-        label.background = background
-        label.isVisible = percentDocumented >= 0
+        try{
+            val rounder = DecimalFormat("#.##")
+            rounder.roundingMode = RoundingMode.DOWN
+            label.text = "File ${rounder.format(percentDocumented)}% Documented"
+            val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
+            else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
+            label.background = background
+            label.isVisible = percentDocumented >= 0
+        }
+        finally{
+
+        }
         return label
+
     }
     override fun ID(): String {
        return WIDGET_ID
@@ -115,7 +110,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         })
     }
 
-    fun externalRefresh(editor: Editor, language: String){
+    fun externalRefresh(editor: Editor, language: String, functions: List<Function>?=null){
         ApplicationManager.getApplication().invokeLater(
                 Thread{
             println("Refreshing documentation")
@@ -123,12 +118,15 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             try{
                 val document: Document = editor.document
                 val sourceCode = document.text
+                var parsedFunctions: List<Function>? = functions
+                if (functions == null){
+                    parsedFunctions = parseFunctions(language, sourceCode).toList()
+                }
 
-                val parsedFunctions = parseFunctions(language, sourceCode)
 
-                val documentedFunctions: Float = parsedFunctions.count {
+                val documentedFunctions: Float = parsedFunctions?.count {
                     it.docstring != null
-                }.toFloat()
+                }!!.toFloat()
 
                 percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
                 updateLabel()

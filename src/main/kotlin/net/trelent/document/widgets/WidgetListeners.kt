@@ -2,6 +2,7 @@ package net.trelent.document.widgets
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.util.messages.Topic
+import net.trelent.document.helpers.Function
 import java.util.*
 
 class WidgetListeners {
@@ -13,6 +14,15 @@ class WidgetListeners {
         }
 
         fun documented(editor: Editor, language: String);
+    }
+
+    interface ParseListener: EventListener {
+        companion object{
+            @JvmStatic val TRELENT_PARSE_ACTION: Topic<ParseListener> = Topic(
+                ParseListener::class.java, Topic.BroadcastDirection.TO_PARENT);
+        }
+
+        fun parse(editor: Editor, language: String, functions: List<Function>);
     }
 
 
