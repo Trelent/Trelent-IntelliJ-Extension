@@ -4,12 +4,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFileAdapter
-import com.intellij.openapi.vfs.VirtualFileEvent
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.impl.status.EditorBasedWidget
@@ -17,9 +12,8 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
-import net.trelent.document.helpers.parseDocument
-import net.trelent.document.ui.widgets.WidgetListeners
-import org.jetbrains.annotations.NotNull
+import net.trelent.document.services.ChangeDetectionService
+import net.trelent.document.listeners.TrelentListeners
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -44,22 +38,8 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     private var label: JLabel
 
     init{
-        VirtualFileManager.getInstance().addVirtualFileListener(object : VirtualFileAdapter() {
-            override fun contentsChanged(@NotNull event: VirtualFileEvent) {
-                if (event.isFromSave || event.isFromRefresh) {
-                    refreshDocumentation()
-                }
-            }
-        })
 
-        project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object: FileEditorManagerListener {
-            override fun selectionChanged(event: FileEditorManagerEvent){
-                    refreshDocumentation()
-            }
-
-        })
-
-        project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
+        project.messageBus.connect(this).subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener {
             override fun documented(editor: Editor, language: String) {
                 externalRefresh(editor, language);
             }
@@ -121,7 +101,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
             try{
 
-                val parsedFunctions = parseDocument(editor, project, false)
+                val parsedFunctions = ChangeDetectionService.getInstance().getHistory(editor.document).allFunctions
 
                 val documentedFunctions: Float = parsedFunctions.count {
                     it.docstring != null
@@ -150,7 +130,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
                     val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
 
-                    val parsedFunctions = parseDocument(editor, project, false)
+                    val parsedFunctions = ChangeDetectionService.getInstance().getHistory(editor.document).allFunctions
 
                     val documentedFunctions: Float = parsedFunctions.count {
                         it.docstring != null

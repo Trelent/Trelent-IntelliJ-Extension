@@ -77,7 +77,20 @@ data class Function(
     var params: Array<String>,
     var offsets: Array<Int>,
     var text: String
-)
+){
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Function
+
+        return offsets[0] == other.offsets[0];
+    }
+
+    override fun hashCode(): Int {
+        return offsets.contentHashCode()
+    }
+}
 
 data class VersionReturn(
     var version: String

@@ -2,7 +2,6 @@ package net.trelent.document.helpers
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -13,7 +12,7 @@ import com.intellij.openapi.project.Project
 import net.trelent.document.actions.getFormat
 import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.settings.TrelentSettingsState
-import net.trelent.document.ui.widgets.WidgetListeners
+import net.trelent.document.listeners.TrelentListeners
 import java.util.concurrent.CompletableFuture
 import kotlin.streams.toList
 
@@ -104,7 +103,7 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
 
                         // Update docs progress
                         val publisher =
-                            project.messageBus.syncPublisher(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
+                            project.messageBus.syncPublisher(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
                         publisher.documented(editor, language);
                     }
 
@@ -137,7 +136,7 @@ fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Arra
     }
 
     if(functions.isNotEmpty() && track){
-        val changeDetectionService = service<ChangeDetectionService>();
+        val changeDetectionService = ChangeDetectionService.getInstance();
         changeDetectionService.trackState(editor.document, functions.toList());
 
     }

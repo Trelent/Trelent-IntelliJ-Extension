@@ -1,10 +1,10 @@
-package net.trelent.document.ui.widgets
+package net.trelent.document.listeners
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.util.messages.Topic
 import java.util.*
 
-class WidgetListeners {
+class TrelentListeners {
 
     interface DocumentedListener: EventListener {
         companion object{

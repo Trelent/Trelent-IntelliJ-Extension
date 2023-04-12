@@ -13,6 +13,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManagerListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.containers.isEmpty
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseDocument
 import net.trelent.document.services.ChangeDetectionService.Companion.getDocID
@@ -24,6 +25,10 @@ import java.security.MessageDigest
 
 class ChangeDetectionService: Disposable{
     companion object{
+
+        @JvmStatic
+        private val LEVENSHTEIN_UPDATE_THRESHOLD = 50;
+
         fun getInstance(): ChangeDetectionService {
             return service<ChangeDetectionService>()
         }
@@ -42,12 +47,11 @@ class ChangeDetectionService: Disposable{
         }
     }
 
-
     private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
 
     private val changedFunctions: HashMap<String, HashMap<String, Function>> = hashMapOf();
 
-    private val LEVENSHTEIN_UPDATE_THRESHOLD = 50;
+
 
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
@@ -81,9 +85,15 @@ class ChangeDetectionService: Disposable{
             deleteDocChange(doc, it);
         };
 
-        updateThese.keys.stream().filter{
-            it != "deleted";
-        }.flatMap {
+         if(updateThese.keys.stream().filter{
+                 it != "deleted";
+             }.isEmpty()){
+             return updateThese;
+         }
+
+         updateThese.keys.stream().filter{
+             it != "deleted";
+         }.flatMap {
             updateThese[it]?.stream();
         }.forEach{
             addDocChange(doc, it);
@@ -98,6 +108,10 @@ class ChangeDetectionService: Disposable{
         val allFunctions = getHistory(doc).allFunctions;
 
         val returnObj: HashMap<String, ArrayList<Function>> = hashMapOf(Pair("new", arrayListOf()), Pair("deleted", arrayListOf()), Pair("updated", arrayListOf()));
+
+        if(allFunctions.isEmpty()){
+            return returnObj
+        }
 
         val idMatching: HashMap<Int, HashMap<String, Function>> = hashMapOf();
 
@@ -125,7 +139,7 @@ class ChangeDetectionService: Disposable{
             val funcPair = it.value;
             if(funcPair.containsKey("old")){
                 if(funcPair.containsKey("new")){
-                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >= LEVENSHTEIN_UPDATE_THRESHOLD){
+                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >= 10){
                         returnObj["updated"]?.add(funcPair["new"]!!);
                     }
                 }
@@ -170,8 +184,6 @@ class ChangeDetectionService: Disposable{
         val offsetDiff = event.newLength - event.oldLength;
         val oldEndIndex = event.offset + event.oldLength;
 
-        val text = doc.text;
-
         functions.forEach{function ->
             val bottomOffset = function.offsets[1];
 
@@ -186,17 +198,8 @@ class ChangeDetectionService: Disposable{
                 if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
             }
 
-            function.text = text.substring(function.offsets[0], function.offsets[1])
-            if(function.docstring_range_offsets != null){
-                function.docstring = text.substring(function.docstring_range_offsets!![0], function.docstring_range_offsets!![1])
-            }
-
         }
-
-
-
-
-
+        refreshDocChanges(doc);
     }
 
     private fun validateDoc(doc: Document): String {
@@ -210,8 +213,21 @@ class ChangeDetectionService: Disposable{
         return trackID;
     }
 
+    private fun refreshDocChanges(doc: Document){
+        val trackID = validateDoc(doc);
+
+        val changedFunctions = changedFunctions[trackID]?.values?.map{
+            it
+        }
+        this.changedFunctions[trackID]?.clear();
+        changedFunctions?.forEach{function ->
+            this.changedFunctions[trackID]?.put(getFuncID(function), function);
+        }
+
+
+    }
+
     override fun dispose() {
-        TODO("Not yet implemented")
     }
 
 

@@ -12,14 +12,14 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
-import net.trelent.document.ui.widgets.WidgetListeners
+import net.trelent.document.listeners.TrelentListeners
 
 
 @State(name = "net.trelent.document.settings.TrelentSettingsState", storages = [Storage("TrelentSettings.xml")])
 class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.TrelentSettings> {
 
     init{
-        ApplicationManager.getApplication().messageBus.connect().subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object : WidgetListeners.DocumentedListener{
+        ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object : TrelentListeners.DocumentedListener{
             override fun documented(editor: Editor, language: String) {
                 settings.numDocumented++;
                 if(settings.numDocumented == DOC_THRESHOLD){
