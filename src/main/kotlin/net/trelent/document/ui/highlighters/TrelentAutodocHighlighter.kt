@@ -1,6 +1,7 @@
 package net.trelent.document.ui.highlighters
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -12,12 +13,18 @@ import javax.swing.Icon
 
 
 abstract class TrelentAutodocHighlighter(editor: Editor, offset: Int) : Disposable {
-    var highlighter: RangeHighlighter;
+    private lateinit var highlighter: RangeHighlighter;
 
 
     init {
-        highlighter = editor.markupModel.addRangeHighlighter(null, offset, offset, HighlighterLayer.ADDITIONAL_SYNTAX,
-            HighlighterTargetArea.LINES_IN_RANGE)
+        if(editor.document.text.length <= offset){
+            throw IllegalStateException()
+        }
+        ApplicationManager.getApplication().runWriteAction{
+            highlighter = editor.markupModel.addRangeHighlighter(null, offset, offset, HighlighterLayer.ADDITIONAL_SYNTAX,
+                HighlighterTargetArea.LINES_IN_RANGE)
+        }
+
     }
     override fun dispose() {
         highlighter.dispose();

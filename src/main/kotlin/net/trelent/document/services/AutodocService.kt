@@ -3,28 +3,24 @@ package net.trelent.document.services
 import com.intellij.AppTopics
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.editor.markup.RangeHighlighter
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.vfs.VirtualFile
+import com.jetbrains.rd.util.printlnError
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.flow
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.getHighlights
 import net.trelent.document.helpers.parseDocument
 import net.trelent.document.helpers.writeDocstringsFromFunctions
+import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.settings.TrelentSettingsState.TrelentTag;
 import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
-import net.trelent.document.ui.highlighters.TrelentGutterRenderer
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
@@ -34,11 +30,17 @@ class AutodocService: Disposable {
     private val updating: HashSet<Document> = hashSetOf()
     private val highlights: HashMap<String, ArrayList<RangeHighlighter>> = hashMapOf();
     private val operations: HashMap<String, ArrayList<TrelentAutodocHighlighter>> = hashMapOf()
-    var job: Job? = null;
+
+
+    private var timeout: Job? = null;
+    private var highlightJob: Job? = null;
+
 
     val DELAY = 500L;
 
     init {
+
+        //On document changed
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
             //On document changed
             override fun documentChanged(event: DocumentEvent) {
@@ -59,14 +61,14 @@ class AutodocService: Disposable {
                             try {
 
                                 // *Timeout job*
-                                job?.cancel();
+                                timeout?.cancel();
 
                                 //Get change detection service, and apply range changes
                                 val changeDetectionService = ChangeDetectionService.getInstance();
                                 changeDetectionService.updateFunctionRanges(event);
 
                                 //Create new job with an initial delay (essentially a timeout)
-                                job = GlobalScope.launch {
+                                timeout = GlobalScope.launch {
                                     delay(DELAY)
                                     try {
                                         val edit = EditorFactory.getInstance().allEditors.find {
@@ -87,6 +89,7 @@ class AutodocService: Disposable {
             }
         }, this)
 
+        //On document opened/reloaded from disk
         ApplicationManager.getApplication().messageBus.connect().subscribe(AppTopics.FILE_DOCUMENT_SYNC, object: FileDocumentManagerListener {
 
             //When a new file is opened
@@ -103,12 +106,32 @@ class AutodocService: Disposable {
                 docLoad(document)
             }
 
+        });
+
+        //On range update
+        ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.RangeUpdateListener.TRELENT_RANGE_UPDATE, object: TrelentListeners.RangeUpdateListener {
+            override fun rangeUpdate(editor: Editor) {
+                resetHighlights(editor);
+            }
+        });
+
+        //On parse
+        ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener{
+            override fun parse(editor: Editor, language: String, functions: List<Function>) {
+                resetHighlights(editor);
+            }
+        })
+
+        //On documented
+        ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener {
+            override fun documented(editor: Editor, language: String) {
+                resetHighlights(editor);
+            }
         })
     }
 
     fun docLoad(document: Document){
         try{
-
             //Attempt to locate editor
             val editor = EditorFactory.getInstance().allEditors.find {
                 it.document == document
@@ -135,10 +158,6 @@ class AutodocService: Disposable {
             //Parse the document, which will track the history
 
             parseDocument(editor, editor.project!!);
-
-            //apply highlights to changed functions
-
-            resetHighlights(editor)
 
             //If the document is already in the middle of being updated, lets skip it
 
@@ -177,8 +196,6 @@ class AutodocService: Disposable {
             writeDocstringsFromFunctions(autoFunctions, editor, editor.project!!);
 
         } finally {
-            //Apply highlights based off the editor, and clear the doc from the updating set
-            resetHighlights(editor);
             updating.remove(doc);
         }
 
@@ -226,7 +243,6 @@ class AutodocService: Disposable {
 
 
     private fun resetHighlights(editor: Editor){
-        ApplicationManager.getApplication().invokeLater {
             try {
 
                 //Clear old instances of the highlights
@@ -241,13 +257,28 @@ class AutodocService: Disposable {
                     val highlightFunctions = getFunctionTags(changes.values.toList())[TrelentTag.HIGHLIGHT];
 
                     if(highlightFunctions != null){
-                        applyHighlights(editor, highlightFunctions)
-                        createOperations(editor, highlightFunctions);
+                        //Cancel the job pre-emptively, so that any jobs that are currently running, will be cancelled
+                        if(highlightJob != null){
+                            highlightJob?.cancel();
+                        }
+                        ApplicationManager.getApplication().invokeLater{
+                            //Then, cancel the job when this runnable is called. This makes it so any invokations called after this, will be cancelled
+                            if(highlightJob != null){
+                                highlightJob?.cancel();
+                            }
+                            highlightJob = runBlocking{
+                                launch{
+                                    applyHighlights(editor, highlightFunctions)
+                                    createOperations(editor, highlightFunctions);
+                                }
+                            }
+
+                        }
+
                     }
 
                 }
             } finally {}
-        }
 
     }
 
@@ -263,40 +294,63 @@ class AutodocService: Disposable {
         val ops: ArrayList<TrelentAutodocHighlighter> = arrayListOf();
         val docID = ChangeDetectionService.getDocID(editor.document);
         functions.forEach{function ->
-            ops.add(TrelentAutodocHighlighter.TrelentAccept(editor, function))
-            ops.add(TrelentAutodocHighlighter.TrelentIgnore(editor, function))
-        }
+            try{
+                ops.add(TrelentAutodocHighlighter.TrelentAccept(editor, function))
+                ops.add(TrelentAutodocHighlighter.TrelentIgnore(editor, function))
+            }
+            catch(ill: IllegalStateException){
+                printlnError("Issue creating operations for function with offsets: ${function.offsets}, on document with length ${editor.document.text.length}")
+            }
+            finally{}
+
+        };
         operations[docID] = ops;
     }
 
     private fun clearOperations(editor: Editor){
         val docID = ChangeDetectionService.getDocID(editor.document);
 
-        operations[docID]?.forEach{ gutterIcon ->
-            gutterIcon.dispose();
+        if(operations[docID] != null){
+            val ops = operations[docID]?.map{
+                it
+            }
+            operations[docID]?.clear();
+            ops?.forEach{ gutterIcon ->
+                ApplicationManager.getApplication().invokeLater{
+                    gutterIcon.dispose();
+                }
+            }
+
         }
-        operations[docID]?.clear();
+
     }
 
     private fun clearHighlights(editor: Editor){
         val trackID = ChangeDetectionService.getDocID(editor.document);
         highlights[trackID]?.forEach{
-            it.dispose();
+            ApplicationManager.getApplication().invokeLater{
+                it.dispose();
+            }
+
         }
     }
 
     override fun dispose() {
         highlights.values.forEach{
             it.forEach{highlight ->
-                highlight.dispose()
+                ApplicationManager.getApplication().invokeLater{
+                    highlight.dispose();
+                }
             }
         }
         operations.values.forEach{
             it.forEach{operation ->
-                operation.dispose();
+                ApplicationManager.getApplication().invokeLater{
+                    operation.dispose();
+                }
             }
         }
-        job?.cancel();
+        timeout?.cancel();
     }
 
 }

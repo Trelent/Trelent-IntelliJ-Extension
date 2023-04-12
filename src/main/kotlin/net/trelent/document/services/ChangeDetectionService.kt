@@ -21,6 +21,7 @@ import net.trelent.document.services.ChangeDetectionService.Companion.getFuncID
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
+import kotlin.streams.toList
 
 
 class ChangeDetectionService: Disposable{
@@ -55,56 +56,38 @@ class ChangeDetectionService: Disposable{
 
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
-    init{
-        println("Change detection")
-        ApplicationManager.getApplication().messageBus.connect(this).subscribe(AppTopics.FILE_DOCUMENT_SYNC, object: FileDocumentManagerListener{
-            override fun fileContentLoaded(file: VirtualFile, document: Document) {
-                try{
-                    ProjectManager.getInstance().openProjects.filter{
-                        FileEditorManager.getInstance(it).openFiles.contains(file);
-                    }
-                        .forEach{
-                            EditorFactory.getInstance().allEditors.filter{editor ->
-                                editor.document == document
-                            }.forEach{editor ->
-                                parseDocument(editor, it, true);
-                            }
-                        }
-
-                }
-                finally{}
-            }
-        });
-    }
      fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val trackID = validateDoc(doc);
 
         val updateThese = getChangedFunctions(doc, functions);
 
+         //Delete deleted functions
         updateThese["deleted"]?.forEach{
             deleteDocChange(doc, it);
         };
 
-         if(updateThese.keys.stream().filter{
-                 it != "deleted";
-             }.isEmpty()){
-             return updateThese;
-         }
-
+         //add new updates
          updateThese.keys.stream().filter{
              it != "deleted";
-         }.flatMap {
-            updateThese[it]?.stream();
-        }.forEach{
-            addDocChange(doc, it);
-        }
+         }.map{
+             updateThese[it]!!
+         }.flatMap{
+             it.stream()
+         }.forEach{
+             addDocChange(doc, it);
+         }
 
-        fileInfo[trackID] = DocumentState(functions, updateThese)
+         fileInfo[trackID]?.allFunctions = functions
+
+         //Reload doc changes
+         reloadDocChanges(doc, functions);
+
+
         return updateThese;
 
     }
 
-    fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
+    private fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
         val allFunctions = getHistory(doc).allFunctions;
 
         val returnObj: HashMap<String, ArrayList<Function>> = hashMapOf(Pair("new", arrayListOf()), Pair("deleted", arrayListOf()), Pair("updated", arrayListOf()));
@@ -223,6 +206,26 @@ class ChangeDetectionService: Disposable{
         changedFunctions?.forEach{function ->
             this.changedFunctions[trackID]?.put(getFuncID(function), function);
         }
+
+
+    }
+
+    private fun reloadDocChanges(doc: Document, functions: List<Function>){
+        val trackID = validateDoc(doc);
+        val changedFunctions = this.changedFunctions[trackID]
+
+
+            val keys = changedFunctions!!.keys.map{
+                it
+            }.toHashSet()
+            functions.forEach{
+                val funcID = getFuncID(it);
+
+                if(keys.contains(funcID)){
+                    changedFunctions[funcID] = it
+                }
+        }
+
 
 
     }

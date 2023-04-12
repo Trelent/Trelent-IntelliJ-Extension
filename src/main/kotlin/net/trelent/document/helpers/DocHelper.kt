@@ -120,11 +120,14 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
 }
 
 fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Array<Function> {
+    val document: Document = editor.document
+    val sourceCode = document.text
+    val file = FileEditorManager.getInstance(project).selectedFiles[0]
+    if(file.extension == null || getExtensionLanguage(file.extension!!) == null){
+        return arrayOf();
+    }
+    val language = getExtensionLanguage(file.extension!!)!!
     val functions = try{
-        val document: Document = editor.document
-        val sourceCode = document.text
-        val file = FileEditorManager.getInstance(project).selectedFiles[0]
-        val language = getExtensionLanguage(file.extension!!)!!
 
         parseFunctions(
             language,
@@ -138,6 +141,7 @@ fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Arra
     if(functions.isNotEmpty() && track){
         val changeDetectionService = ChangeDetectionService.getInstance();
         changeDetectionService.trackState(editor.document, functions.toList());
+        project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION).parse(editor, language, functions.toList())
 
     }
     return functions;

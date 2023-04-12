@@ -2,6 +2,7 @@ package net.trelent.document.ui.widgets.PercentDocumented
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -15,9 +16,7 @@ import com.jetbrains.rd.util.printlnError
 import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.helpers.Function
-import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.helpers.parseFunctions
-import net.trelent.document.widgets.WidgetListeners
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -43,14 +42,14 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
     init{
 
-        project.messageBus.connect(this).subscribe(WidgetListeners.ParseListener.TRELENT_PARSE_ACTION, object: WidgetListeners.ParseListener {
+        project.messageBus.connect(this).subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
             override fun parse(editor: Editor, language: String, functions: List<Function>) {
                 externalRefresh(editor, language, functions);
             }
 
         })
 
-        project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
+        project.messageBus.connect(this).subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener {
             override fun documented(editor: Editor, language: String) {
                 externalRefresh(editor, language);
             }

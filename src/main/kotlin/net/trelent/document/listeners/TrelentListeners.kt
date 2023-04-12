@@ -18,11 +18,20 @@ class TrelentListeners {
 
     interface ParseListener: EventListener {
         companion object{
-            @JvmStatic val TRELENT_PARSE_ACTION: Topic<ParseListener> = Topic(
+            @JvmStatic val TRELENT_PARSE_TRACK_ACTION: Topic<ParseListener> = Topic(
                 ParseListener::class.java, Topic.BroadcastDirection.TO_PARENT);
         }
 
         fun parse(editor: Editor, language: String, functions: List<Function>);
+    }
+
+    interface RangeUpdateListener: EventListener {
+        companion object{
+            @JvmStatic val TRELENT_RANGE_UPDATE: Topic<RangeUpdateListener> = Topic(
+                RangeUpdateListener::class.java, Topic.BroadcastDirection.TO_PARENT);
+        }
+
+        fun rangeUpdate(editor: Editor);
     }
 
 
