@@ -14,6 +14,10 @@ import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.listeners.TrelentListeners
+import net.trelent.document.helpers.Function
+import net.trelent.document.helpers.getExtensionLanguage
+import net.trelent.document.helpers.parseFunctions
+import net.trelent.document.widgets.WidgetListeners
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -39,7 +43,14 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
     init{
 
-        project.messageBus.connect(this).subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener {
+        project.messageBus.connect(this).subscribe(WidgetListeners.ParseListener.TRELENT_PARSE_ACTION, object: WidgetListeners.ParseListener {
+            override fun parse(editor: Editor, language: String, functions: List<Function>) {
+                externalRefresh(editor, language, functions);
+            }
+
+        })
+
+        project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
             override fun documented(editor: Editor, language: String) {
                 externalRefresh(editor, language);
             }
@@ -58,14 +69,20 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     }
 
     private fun updateLabel(): JLabel{
-        val rounder = DecimalFormat("#.##")
-        rounder.roundingMode = RoundingMode.DOWN
-        label.text = "File ${rounder.format(percentDocumented)}% Documented"
-        val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
-        else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
-        label.background = background
-        label.isVisible = percentDocumented >= 0
+        try{
+            val rounder = DecimalFormat("#.##")
+            rounder.roundingMode = RoundingMode.DOWN
+            label.text = "File ${rounder.format(percentDocumented)}% Documented"
+            val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
+            else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
+            label.background = background
+            label.isVisible = percentDocumented >= 0
+        }
+        finally{
+
+        }
         return label
+
     }
     override fun ID(): String {
        return WIDGET_ID
@@ -94,18 +111,23 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         })
     }
 
-    fun externalRefresh(editor: Editor, language: String){
+    fun externalRefresh(editor: Editor, language: String, functions: List<Function>?=null){
         ApplicationManager.getApplication().invokeLater(
                 Thread{
             println("Refreshing documentation")
 
             try{
+                val document: Document = editor.document
+                val sourceCode = document.text
+                var parsedFunctions: List<Function>? = functions
+                if (functions == null){
+                    parsedFunctions = parseFunctions(language, sourceCode).toList()
+                }
 
-                val parsedFunctions = ChangeDetectionService.getInstance().getHistory(editor.document).allFunctions
 
-                val documentedFunctions: Float = parsedFunctions.count {
+                val documentedFunctions: Float = parsedFunctions?.count {
                     it.docstring != null
-                }.toFloat()
+                }!!.toFloat()
 
                 percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
                 updateLabel()
