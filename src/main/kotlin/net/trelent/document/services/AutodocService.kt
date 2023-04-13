@@ -74,12 +74,9 @@ class AutodocService: Disposable {
                                         val edit = EditorFactory.getInstance().allEditors.find {
                                             it.document == event.document
                                         };
-
                                         if(edit != null){
                                             updateDocstrings(editor)
                                         }
-
-
                                     } finally {}
                                 }
                             } finally {}

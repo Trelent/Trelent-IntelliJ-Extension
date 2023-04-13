@@ -9,6 +9,8 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.withLock
 import net.trelent.document.actions.getFormat
 import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.settings.TrelentSettingsState
@@ -121,29 +123,34 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
 
 fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Array<Function> {
     val document: Document = editor.document
-    val sourceCode = document.text
+
     val file = FileEditorManager.getInstance(project).selectedFiles[0]
     if(file.extension == null || getExtensionLanguage(file.extension!!) == null){
         return arrayOf();
     }
     val language = getExtensionLanguage(file.extension!!)!!
-    val functions = try{
+    val functions = runBlocking {
+        ChangeDetectionService.getInstance().parseBlocker.withLock{
+            val innerFuncs = try{
+                val sourceCode = document.text
+                parseFunctions(
+                    language,
+                    sourceCode
+                );
+            }
+            catch(_: Exception){
+                arrayOf();
+            }
 
-        parseFunctions(
-            language,
-            sourceCode
-        );
-    }
-    catch(_: Exception){
-        arrayOf();
-    }
+            if(innerFuncs.isNotEmpty() && track) {
+                val changeDetectionService = ChangeDetectionService.getInstance();
+                changeDetectionService.trackState(editor.document, innerFuncs.toList());
+            }
+            innerFuncs
 
-    if(functions.isNotEmpty() && track){
-        val changeDetectionService = ChangeDetectionService.getInstance();
-        changeDetectionService.trackState(editor.document, functions.toList());
-        project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION).parse(editor, language, functions.toList())
-
+        }
     }
+    project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION).parse(editor, language, functions.toList())
     return functions;
 
 
