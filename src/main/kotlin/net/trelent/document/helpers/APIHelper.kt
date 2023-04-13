@@ -24,11 +24,11 @@ private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.
 
 
 // Dev Api
-//private const val WRITE_DOCSTRING_URL        = "https://dev-api.trelent.net/docs/docstring"
+private const val WRITE_DOCSTRING_URL        = "https://dev-api.trelent.net/docs/docstring"
 
 
 // Local Api
-private const val WRITE_DOCSTRING_URL        = "http://localhost:8000/docs/docstring"
+//private const val WRITE_DOCSTRING_URL        = "http://localhost:8000/docs/docstring"
 
 data class FunctionRequest(
     val function_code: String,
