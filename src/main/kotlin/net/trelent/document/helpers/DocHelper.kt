@@ -22,7 +22,9 @@ import kotlin.streams.toList
 fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, project: Project){
 
     try {
-
+        if(functions.isEmpty()){
+            return;
+        }
         val document: Document = editor.document
         val file = FileEditorManager.getInstance(project).selectedFiles[0]
         var language = getExtensionLanguage(file.extension!!)!!

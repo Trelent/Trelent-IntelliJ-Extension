@@ -41,7 +41,6 @@ class AutodocService: Disposable {
     init {
 
         //On document changed
-        /*
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
             //On document changed
             override fun documentChanged(event: DocumentEvent) {
@@ -126,8 +125,6 @@ class AutodocService: Disposable {
                 resetHighlights(editor);
             }
         })
-
-         */
     }
 
     fun docLoad(document: Document){
