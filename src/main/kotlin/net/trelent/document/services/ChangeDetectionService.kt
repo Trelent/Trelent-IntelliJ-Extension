@@ -1,16 +1,22 @@
 package net.trelent.document.services
 
+import com.intellij.AppTopics
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import kotlinx.coroutines.runBlocking
+import com.intellij.openapi.fileEditor.FileDocumentManagerListener
+import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.trelent.document.helpers.Function
+import net.trelent.document.helpers.parseDocument
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -38,6 +44,73 @@ class ChangeDetectionService: Disposable{
             return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
 
         }
+    }
+
+    private var timeout: Job? = null;
+
+    val DELAY = 500L;
+
+    init{
+        EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
+            //On document changed
+            override fun documentChanged(event: DocumentEvent) {
+                try {
+                    //Call to super (Could be redundant)
+                    super.documentChanged(event)
+                        //Create job on dispatch thread, and cancel old one if it exists
+                        ApplicationManager.getApplication().invokeLater {
+                            try {
+                                // *Timeout job*
+                                timeout?.cancel();
+                                //Get change detection service, and apply range changes
+                                updateFunctionRanges(event);
+                                //Create new job with an initial delay (essentially a timeout)
+                                timeout = GlobalScope.launch {
+                                    delay(DELAY)
+                                    try {
+                                        val edit = EditorFactory.getInstance().allEditors.find {
+                                            it.document == event.document
+                                        };
+                                        if(edit != null){
+                                            docLoad(event.document)
+                                        }
+                                    } finally {}
+                                }
+                            } finally {}
+                        }
+                } finally {}
+            }
+        }, this)
+        //On document opened/reloaded from disk
+        ApplicationManager.getApplication().messageBus.connect().subscribe(AppTopics.FILE_DOCUMENT_SYNC, object:
+            FileDocumentManagerListener {
+            //When a new file is opened
+            override fun fileContentLoaded(file: VirtualFile, document: Document) {
+                //Call to super, just for safety
+                super.fileContentLoaded(file, document)
+                docLoad(document);
+            }
+            //When a file is reloaded from disk
+            override fun fileContentReloaded(file: VirtualFile, document: Document) {
+                //call to super for safety
+                super.fileContentReloaded(file, document)
+                docLoad(document)
+            }
+        });
+    }
+
+    fun docLoad(document: Document){
+        try{
+            //Attempt to locate editor
+            val editor = EditorFactory.getInstance().allEditors.find {
+                it.document == document
+            };
+            //If we found the editor, and the project is valid, then proceed
+            if(editor != null && editor.project != null){
+                parseDocument(editor, editor.project!!)
+            }
+        }
+        finally{}
     }
 
     private val fileInfo: HashMap<String, DocumentState> = hashMapOf();

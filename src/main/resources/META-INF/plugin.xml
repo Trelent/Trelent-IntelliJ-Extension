@@ -22,7 +22,6 @@
                 displayName="Trelent Settings"
         />
         <applicationService serviceImplementation="net.trelent.document.settings.TrelentSettingsState"/>
-        <applicationService serviceImplementation="net.trelent.document.services.AutodocService" preload="true"/>
         <applicationService serviceImplementation="net.trelent.document.services.ChangeDetectionService" preload="true"/>
         <notificationGroup id="Trelent Error Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Info Notification Group" displayType="BALLOON" key="notification.group.trelent"/>

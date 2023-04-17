@@ -38,8 +38,6 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         var javascriptFormat: String = "jsdoc",
         var pythonFormat: String = "rest",
         var numDocumented: Int = 0,
-        var threshold: AutodocThreshold = AutodocThreshold.NEUTRAL,
-        var mode: TrelentTag = TrelentTag.HIGHLIGHT
     )
 
     enum class AutodocThreshold(val num: Int){

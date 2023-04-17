@@ -13,10 +13,10 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
-import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseFunctions
+import net.trelent.document.services.ChangeDetectionService
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
