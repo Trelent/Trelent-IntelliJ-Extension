@@ -75,7 +75,7 @@ class AutodocService: Disposable {
                                             it.document == event.document
                                         };
                                         if(edit != null){
-                                            updateDocstrings(editor)
+                                            updateDocstrings(edit)
                                         }
                                     } finally {}
                                 }
@@ -152,10 +152,6 @@ class AutodocService: Disposable {
         }
         try {
 
-            //Parse the document, which will track the history
-
-            parseDocument(editor, editor.project!!);
-
             //If the document is already in the middle of being updated, lets skip it
 
             if (updating.contains(doc)) {
@@ -165,6 +161,10 @@ class AutodocService: Disposable {
             //mark this document as being updated
 
             updating.add(doc);
+            //Parse the document, which will track the history
+
+            parseDocument(editor, editor.project!!);
+
 
             //Get changed functions
 
@@ -280,11 +280,14 @@ class AutodocService: Disposable {
     }
 
     private fun applyHighlights(editor: Editor, functions: List<Function>){
+        ApplicationManager.getApplication().invokeLater{
             val highlights = getHighlights(editor, functions);
 
             val docID = ChangeDetectionService.getDocID(editor.document);
 
             this.highlights[docID] = highlights;
+        }
+
     }
 
     private fun createOperations(editor: Editor, functions: List<Function>){

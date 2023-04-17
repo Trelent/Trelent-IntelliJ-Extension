@@ -53,6 +53,8 @@ class ChangeDetectionService: Disposable{
 
         val updateThese = getChangedFunctions(doc, functions);
 
+         fileInfo[trackID]?.allFunctions = functions
+
          //Delete deleted functions
         updateThese["deleted"]?.forEach{
             deleteDocChange(doc, it);
@@ -69,7 +71,7 @@ class ChangeDetectionService: Disposable{
              addDocChange(doc, it);
          }
 
-         fileInfo[trackID]?.allFunctions = functions
+
 
          //Reload doc changes
          reloadDocChanges(doc, functions);
@@ -160,18 +162,24 @@ class ChangeDetectionService: Disposable{
                 parseBlocker.withLock{
                     val functions = getHistory(doc).allFunctions
                     functions.forEach{function ->
-                        val bottomOffset = function.offsets[1];
+                        try{
+                            val bottomOffset = function.offsets[1];
 
-                        if(oldEndIndex <= bottomOffset){
-                            if(function.docstring_range_offsets != null){
-                                val docRange = function.docstring_range_offsets!!;
-                                if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
-                                if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
+                            if(oldEndIndex <= bottomOffset){
+                                if(function.docstring_range_offsets != null){
+                                    val docRange = function.docstring_range_offsets!!;
+                                    if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
+                                    if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
+                                }
+                                if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
+                                if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
+                                if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
                             }
-                            if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
-                            if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
-                            if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
                         }
+                        finally{
+
+                        }
+
 
                     }
                     refreshDocChanges(doc);
@@ -200,7 +208,17 @@ class ChangeDetectionService: Disposable{
         val changedFunctions = changedFunctions[trackID]?.values?.map{
             it
         }
-        this.changedFunctions[trackID]?.clear();
+        val iterator = this.changedFunctions[trackID]?.iterator()
+        //Need this block to fix concurrency problems
+        if(iterator != null){
+            while(iterator.hasNext()){
+                iterator.next();
+                iterator.remove();
+            }
+        }
+        this.changedFunctions[trackID]?.iterator()?.forEach{
+
+        }
         changedFunctions?.forEach{function ->
             this.changedFunctions[trackID]?.put(getFuncID(function), function);
         }

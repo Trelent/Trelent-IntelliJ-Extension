@@ -8,16 +8,17 @@ import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
+import com.intellij.util.concurrency.annotations.RequiresEdt
 import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
 
 
 const val LAYER_PRIORITY_STEP = 5 // BASE_LAYER..LINE_MARKER_LAYER
 const val DEFAULT_LAYER = HighlighterLayer.SELECTION - 102
 
+@RequiresEdt
 fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHighlighter> {
     val highlighters: ArrayList<RangeHighlighter> = arrayListOf()
 
-    ApplicationManager.getApplication().invokeLater{
         functions.forEach{function ->
 
             ApplicationManager.getApplication().runReadAction{
@@ -42,7 +43,6 @@ fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHig
             }
 
         }
-    }
     return highlighters;
 }
 
