@@ -187,7 +187,7 @@ class ChangeDetectionService: Disposable{
             val funcPair = it.value;
             if(funcPair.containsKey("old")){
                 if(funcPair.containsKey("new")){
-                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >= 10){
+                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >= LEVENSHTEIN_UPDATE_THRESHOLD){
                         returnObj["updated"]?.add(funcPair["new"]!!);
                     }
                 }

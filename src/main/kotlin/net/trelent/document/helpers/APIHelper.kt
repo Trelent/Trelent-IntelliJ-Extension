@@ -20,11 +20,11 @@ private const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
 private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
-//private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
+private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
 
 
 // Dev Api
-private const val WRITE_DOCSTRING_URL        = "https://dev-api.trelent.net/docs/docstring"
+//private const val WRITE_DOCSTRING_URL        = "https://dev-api.trelent.net/docs/docstring"
 
 
 // Local Api
