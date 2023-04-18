@@ -44,7 +44,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
         project.messageBus.connect(this).subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
             override fun parse(editor: Editor, language: String, functions: List<Function>) {
-                externalRefresh(editor, functions);
+                externalRefresh(editor);
             }
 
         })
@@ -110,17 +110,14 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         })
     }
 
-    fun externalRefresh(editor: Editor, functions: List<Function>?=null){
+    fun externalRefresh(editor: Editor){
         ApplicationManager.getApplication().invokeLater(
                 Thread{
             println("Refreshing documentation")
 
             try{
                 val document: Document = editor.document
-                var parsedFunctions: List<Function>? = functions
-                if (functions == null){
-                    parsedFunctions = ChangeDetectionService.getInstance().getHistory(editor.document).allFunctions
-                }
+                var parsedFunctions: List<Function>? = ChangeDetectionService.getInstance().getHistory(document).allFunctions
 
 
                 val documentedFunctions: Float = parsedFunctions?.count {
