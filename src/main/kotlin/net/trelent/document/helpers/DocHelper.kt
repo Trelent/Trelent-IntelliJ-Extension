@@ -101,10 +101,20 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                             .joinToString("\n") + "\n").prependIndent(" ".repeat(docStringColumn))
                         val docstringText = docStringHead + "\n" + docStringBody;
 
+                        if(currentFunction.docstring != null){
                         // Insert the docstring
-                        WriteCommandAction.runWriteCommandAction(project) {
-                            document.insertString(docStringOffset, docstringText)
+                            WriteCommandAction.runWriteCommandAction(project) {
+                                document.replaceString(currentFunction.docstring_range_offsets!![0], currentFunction.docstring_range_offsets!![1], docstringText.trimEnd());
+                            }
+
                         }
+                        else{
+                            WriteCommandAction.runWriteCommandAction(project){
+                                document.insertString(currentFunction.docstring_offset, docstringText)
+                            }
+                        }
+
+
 
                         // Update docs progress
                         val publisher =

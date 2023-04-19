@@ -51,7 +51,15 @@ class ChangeDetectionService: Disposable{
 
     private var timeout: Job? = null;
 
-    val DELAY = 500L;
+    private val DELAY = 500L;
+
+    private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
+
+    private val changedFunctions: HashMap<String, HashMap<String, Function>> = hashMapOf();
+
+    val parseBlocker = Mutex()
+
+    val rangeBlocker = Mutex();
 
     init{
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
@@ -111,12 +119,6 @@ class ChangeDetectionService: Disposable{
         }
         finally{}
     }
-
-    private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
-
-    private val changedFunctions: HashMap<String, HashMap<String, Function>> = hashMapOf();
-
-    val parseBlocker = Mutex()
 
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
@@ -231,31 +233,34 @@ class ChangeDetectionService: Disposable{
         val oldEndIndex = event.offset + event.oldLength;
         ApplicationManager.getApplication().invokeLater{
             runBlocking{
-                parseBlocker.withLock{
-                    val functions = getHistory(doc).allFunctions
-                    functions.forEach{function ->
-                        try{
-                            val bottomOffset = function.offsets[1];
+                rangeBlocker.withLock{
+                    parseBlocker.withLock{
+                        val functions = getHistory(doc).allFunctions
+                        functions.forEach{function ->
+                            try{
+                                val bottomOffset = function.offsets[1];
 
-                            if(oldEndIndex <= bottomOffset){
-                                if(function.docstring_range_offsets != null){
-                                    val docRange = function.docstring_range_offsets!!;
-                                    if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
-                                    if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
+                                if(oldEndIndex <= bottomOffset){
+                                    if(function.docstring_range_offsets != null){
+                                        val docRange = function.docstring_range_offsets!!;
+                                        if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
+                                        if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
+                                    }
+                                    if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
+                                    if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
+                                    if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
                                 }
-                                if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
-                                if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
-                                if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
                             }
-                        }
-                        finally{
+                            finally{
+
+                            }
+
 
                         }
-
-
+                        refreshDocChanges(doc);
                     }
-                    refreshDocChanges(doc);
                 }
+
 
             }
         }
