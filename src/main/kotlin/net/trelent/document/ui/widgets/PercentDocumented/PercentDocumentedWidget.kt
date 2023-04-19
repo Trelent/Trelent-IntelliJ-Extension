@@ -157,7 +157,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
                             it.docstring != null
                         }.toFloat()
 
-                        this.percentDocumented = if(parsedFunctions.size > 0) (documentedFunctions / parsedFunctions.size) * 100f else 0f;
+                        this.percentDocumented = if(parsedFunctions.isNotEmpty()) (documentedFunctions / parsedFunctions.size) * 100f else 0f;
 
                 }
                 updateLabel()
