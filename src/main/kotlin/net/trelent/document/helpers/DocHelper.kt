@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -108,7 +109,7 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                         // Update docs progress
                         val publisher =
                             project.messageBus.syncPublisher(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
-                        publisher.documented(editor, language);
+                        publisher.documented(document, language);
                     }
 
 
@@ -123,11 +124,10 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
 
 }
 
-fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Array<Function> {
-    val document: Document = editor.document
+fun parseDocument(document: Document, project: Project, track: Boolean = true): Array<Function> {
 
-    val file = FileEditorManager.getInstance(project).selectedFiles[0]
-    if(file.extension == null || getExtensionLanguage(file.extension!!) == null){
+    val file = FileDocumentManager.getInstance().getFile(document);
+    if(file == null || file.extension == null || getExtensionLanguage(file.extension!!) == null){
         return arrayOf();
     }
     val language = getExtensionLanguage(file.extension!!)!!
@@ -146,13 +146,13 @@ fun parseDocument(editor: Editor, project: Project, track: Boolean = true): Arra
 
             if(innerFuncs.isNotEmpty() && track) {
                 val changeDetectionService = ChangeDetectionService.getInstance();
-                changeDetectionService.trackState(editor.document, innerFuncs.toList());
+                changeDetectionService.trackState(document, innerFuncs.toList());
             }
             innerFuncs
 
         }
     }
-    project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION).parse(editor, language, functions.toList())
+    project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION).parse(document, language, functions.toList())
     return functions;
 
 

@@ -11,6 +11,7 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import net.trelent.document.listeners.TrelentListeners
 
@@ -20,7 +21,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
 
     init{
         ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object : TrelentListeners.DocumentedListener{
-            override fun documented(editor: Editor, language: String) {
+            override fun documented(document: Document, language: String) {
                 settings.numDocumented++;
                 if(settings.numDocumented == DOC_THRESHOLD){
                     showDiscordNotification()

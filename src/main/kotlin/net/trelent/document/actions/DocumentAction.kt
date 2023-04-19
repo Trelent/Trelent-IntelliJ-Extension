@@ -42,7 +42,6 @@ class DocumentAction : AnAction() {
             // Get the editor's contents, language, and cursor
             val document: Document = editor.document
             val cursor: Caret = editor.caretModel.currentCaret
-            val sourceCode = document.text
             val file = FileEditorManager.getInstance(project).selectedFiles[0]
             var language = getExtensionLanguage(file.extension!!)!!
 
@@ -58,7 +57,7 @@ class DocumentAction : AnAction() {
                 return
             }
 
-            val parsedFunctions = parseDocument(editor, project);
+            val parsedFunctions = parseDocument(document, project);
 
             var offset = 0
             ApplicationManager.getApplication().runReadAction {

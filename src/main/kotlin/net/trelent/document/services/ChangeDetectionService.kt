@@ -11,6 +11,9 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.project.ProjectLocator
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -68,11 +71,9 @@ class ChangeDetectionService: Disposable{
                                 timeout = GlobalScope.launch {
                                     delay(DELAY)
                                     try {
-                                        val edit = EditorFactory.getInstance().allEditors.find {
-                                            it.document == event.document
-                                        };
-                                        if(edit != null){
-                                            docLoad(event.document)
+                                        val file = FileDocumentManager.getInstance().getFile(event.document)
+                                        if(file != null){
+                                            docLoad(event.document, file)
                                         }
                                     } finally {}
                                 }
@@ -88,26 +89,24 @@ class ChangeDetectionService: Disposable{
             override fun fileContentLoaded(file: VirtualFile, document: Document) {
                 //Call to super, just for safety
                 super.fileContentLoaded(file, document)
-                docLoad(document);
+                docLoad(document, file);
             }
             //When a file is reloaded from disk
             override fun fileContentReloaded(file: VirtualFile, document: Document) {
                 //call to super for safety
                 super.fileContentReloaded(file, document)
-                docLoad(document)
+                docLoad(document, file)
             }
         });
     }
 
-    fun docLoad(document: Document){
+    fun docLoad(document: Document, file: VirtualFile){
         try{
             //Attempt to locate editor
-            val editor = EditorFactory.getInstance().allEditors.find {
-                it.document == document
-            };
+            val project = ProjectLocator.getInstance().guessProjectForFile(file);
             //If we found the editor, and the project is valid, then proceed
-            if(editor != null && editor.project != null){
-                parseDocument(editor, editor.project!!)
+            if(project != null){
+                parseDocument(document, project)
             }
         }
         finally{}

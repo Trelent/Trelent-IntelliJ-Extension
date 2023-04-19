@@ -1,5 +1,6 @@
 package net.trelent.document.listeners
 
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.util.messages.Topic
 import net.trelent.document.helpers.Function
@@ -13,7 +14,7 @@ class TrelentListeners {
                 DocumentedListener::class.java, Topic.BroadcastDirection.TO_PARENT);
         }
 
-        fun documented(editor: Editor, language: String);
+        fun documented(document: Document, language: String);
     }
 
     interface ParseListener: EventListener {
@@ -22,7 +23,7 @@ class TrelentListeners {
                 ParseListener::class.java, Topic.BroadcastDirection.TO_PARENT);
         }
 
-        fun parse(editor: Editor, language: String, functions: List<Function>);
+        fun parse(document: Document, language: String, functions: List<Function>);
     }
 
     interface RangeUpdateListener: EventListener {
@@ -31,7 +32,7 @@ class TrelentListeners {
                 RangeUpdateListener::class.java, Topic.BroadcastDirection.TO_PARENT);
         }
 
-        fun rangeUpdate(editor: Editor);
+        fun rangeUpdate(document: Document);
     }
 
 
