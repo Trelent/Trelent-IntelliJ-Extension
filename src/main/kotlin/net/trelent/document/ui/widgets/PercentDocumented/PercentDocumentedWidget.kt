@@ -1,4 +1,4 @@
-package net.trelent.document.widgets.PercentDocumented
+package net.trelent.document.ui.widgets.PercentDocumented
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
@@ -13,10 +13,10 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
+import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.helpers.Function
-import net.trelent.document.helpers.getExtensionLanguage
 import net.trelent.document.helpers.parseFunctions
-import net.trelent.document.widgets.WidgetListeners
+import net.trelent.document.services.ChangeDetectionService
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -25,6 +25,7 @@ import java.text.DecimalFormat
 import javax.swing.Icon
 import javax.swing.JComponent
 import javax.swing.JLabel
+import kotlin.properties.Delegates
 
 
 class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), CustomStatusBarWidget, Activatable {
@@ -37,30 +38,32 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         @JvmStatic val EMPTY_COLOR: Color = JBColor.getHSBColor(0F, 1.0F, 0.5F)
     }
 
-    private var percentDocumented: Float = -1f
+    var percentDocumented by Delegates.notNull<Float>()
     private var label: JLabel
 
     init{
 
-        project.messageBus.connect(this).subscribe(WidgetListeners.ParseListener.TRELENT_PARSE_ACTION, object: WidgetListeners.ParseListener {
-            override fun parse(editor: Editor, language: String, functions: List<Function>) {
-                externalRefresh(editor, language, functions);
+        project.messageBus.connect(this).subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
+            override fun parse(document: Document, language: String, functions: List<Function>) {
+                externalRefresh(document);
             }
 
         })
 
-        project.messageBus.connect(this).subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: WidgetListeners.DocumentedListener {
-            override fun documented(editor: Editor, language: String) {
-                externalRefresh(editor, language);
+        project.messageBus.connect(this).subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener {
+            override fun documented(document: Document, language: String) {
+                externalRefresh(document);
             }
 
         })
         label = JLabel()
         label.icon = ICON
         label.isOpaque = true
+        percentDocumented = 0f;
 
         refreshDocumentation()
     }
+
 
     override fun dispose() {
         label.isVisible = false
@@ -69,6 +72,9 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
     private fun updateLabel(): JLabel{
         try{
+            if(percentDocumented < 0){
+                return label
+            }
             val rounder = DecimalFormat("#.##")
             rounder.roundingMode = RoundingMode.DOWN
             label.text = "File ${rounder.format(percentDocumented)}% Documented"
@@ -110,25 +116,20 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         })
     }
 
-    fun externalRefresh(editor: Editor, language: String, functions: List<Function>?=null){
+    fun externalRefresh(document: Document){
         ApplicationManager.getApplication().invokeLater(
                 Thread{
             println("Refreshing documentation")
 
             try{
-                val document: Document = editor.document
-                val sourceCode = document.text
-                var parsedFunctions: List<Function>? = functions
-                if (functions == null){
-                    parsedFunctions = parseFunctions(language, sourceCode).toList()
-                }
+                val parsedFunctions: List<Function> = ChangeDetectionService.getInstance().getHistory(document).allFunctions
 
 
-                val documentedFunctions: Float = parsedFunctions?.count {
+                val documentedFunctions: Float = parsedFunctions.count {
                     it.docstring != null
-                }!!.toFloat()
+                }.toFloat()
 
-                percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
+                this.percentDocumented = (documentedFunctions/parsedFunctions.size) * 100
                 updateLabel()
             }
 
@@ -142,34 +143,30 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
     fun refreshDocumentation(){
 
-        ApplicationManager.getApplication().invokeLater(
-        Thread{
+        ApplicationManager.getApplication().invokeLater{
             println("Refreshing documentation")
 
             try{
-            if(FileEditorManager.getInstance(project).selectedTextEditor != null) {
+                if(FileEditorManager.getInstance(project).selectedTextEditor != null) {
 
-                    val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
-                    val document: Document = editor.document
-                    val sourceCode = document.text
-                    val file = FileEditorManager.getInstance(project).selectedFiles[0]
-                    val language = getExtensionLanguage(file.extension!!)!!
+                        val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
 
-                    val parsedFunctions = parseFunctions(language, sourceCode)
+                        val parsedFunctions = ChangeDetectionService.getInstance().getHistory(editor.document).allFunctions
 
-                    val documentedFunctions: Float = parsedFunctions.count {
-                        it.docstring != null
-                    }.toFloat()
+                        val documentedFunctions: Float = parsedFunctions.count {
+                            it.docstring != null
+                        }.toFloat()
 
-                    percentDocumented = (documentedFunctions / parsedFunctions.size) * 100
-                    updateLabel()
-            }
+                        this.percentDocumented = if(parsedFunctions.isNotEmpty()) (documentedFunctions / parsedFunctions.size) * 100f else 0f;
+
+                }
+                updateLabel()
             } catch (e: Exception) {
                 printlnError("Error refreshing documentation ${e.stackTraceToString()}")
                 //TODO: Add more robust clear checking
                 clear()
             }
-        })
+        }
 
 
     }

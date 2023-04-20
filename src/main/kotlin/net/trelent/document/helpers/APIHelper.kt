@@ -20,7 +20,7 @@ private const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
 private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
-//private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
+private const val WRITE_DOCSTRING_URL        = "https://prod-api.trelent.net/docs/docstring"
 
 
 // Dev Api
@@ -28,7 +28,7 @@ private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.
 
 
 // Local Api
-private const val WRITE_DOCSTRING_URL        = "http://localhost:8000/docs/docstring"
+//private const val WRITE_DOCSTRING_URL        = "http://localhost:8000/docs/docstring"
 
 data class FunctionRequest(
     val function_code: String,
@@ -77,7 +77,20 @@ data class Function(
     var params: Array<String>,
     var offsets: Array<Int>,
     var text: String
-)
+){
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Function
+
+        return offsets[0] == other.offsets[0];
+    }
+
+    override fun hashCode(): Int {
+        return offsets.contentHashCode()
+    }
+}
 
 data class VersionReturn(
     var version: String

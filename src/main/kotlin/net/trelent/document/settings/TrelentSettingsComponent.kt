@@ -72,4 +72,5 @@ class TrelentSettingsComponent {
     fun setPythonFormat(@NotNull newText: String?) {
         pythonFormat.setSelectedValue(newText, true)
     }
+
 }

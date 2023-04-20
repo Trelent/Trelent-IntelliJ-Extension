@@ -8,20 +8,15 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.*
 import net.trelent.document.helpers.Function
 import net.trelent.document.settings.TrelentSettingsState
-import net.trelent.document.widgets.WidgetListeners
 import org.jetbrains.annotations.NotNull
 
 class DocumentAction : AnAction() {
@@ -47,7 +42,6 @@ class DocumentAction : AnAction() {
             // Get the editor's contents, language, and cursor
             val document: Document = editor.document
             val cursor: Caret = editor.caretModel.currentCaret
-            val sourceCode = document.text
             val file = FileEditorManager.getInstance(project).selectedFiles[0]
             var language = getExtensionLanguage(file.extension!!)!!
 
@@ -63,7 +57,7 @@ class DocumentAction : AnAction() {
                 return
             }
 
-            val parsedFunctions = parseFunctions(language, sourceCode);
+            val parsedFunctions = parseDocument(document, project);
 
             var offset = 0
             ApplicationManager.getApplication().runReadAction {

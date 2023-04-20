@@ -10,16 +10,18 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
-import net.trelent.document.widgets.WidgetListeners
+import net.trelent.document.listeners.TrelentListeners
 
 
 @State(name = "net.trelent.document.settings.TrelentSettingsState", storages = [Storage("TrelentSettings.xml")])
 class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.TrelentSettings> {
 
     init{
-        ApplicationManager.getApplication().messageBus.connect().subscribe(WidgetListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object : WidgetListeners.DocumentedListener{
-            override fun documented(editor: Editor, language: String) {
+        ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object : TrelentListeners.DocumentedListener{
+            override fun documented(document: Document, language: String) {
                 settings.numDocumented++;
                 if(settings.numDocumented == DOC_THRESHOLD){
                     showDiscordNotification()
@@ -36,8 +38,22 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         var javaFormat: String = "javadoc",
         var javascriptFormat: String = "jsdoc",
         var pythonFormat: String = "rest",
-        var numDocumented: Int = 0
+        var numDocumented: Int = 0,
     )
+
+    enum class AutodocThreshold(val num: Int){
+        PASSIVE(1250),
+        NEUTRAL(750),
+        AGGRESSIVE(250),
+        NONE(0),
+    }
+
+    enum class TrelentTag(val tag: String) {
+        AUTO("@trelent-auto"),
+        HIGHLIGHT("@trelent-highlight"),
+        IGNORE("@trelent-ignore"),
+        NONE("")
+    }
 
     private fun showDiscordNotification(){
         val errNotification = Notification(
@@ -64,7 +80,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         private val DOC_THRESHOLD = 10;
         private val DISCORD_LINK = "https://discord.gg/trelent"
         fun getInstance(): TrelentSettingsState {
-            return ApplicationManager.getApplication().getService(TrelentSettingsState::class.java)
+            return service<TrelentSettingsState>()
         }
     }
 

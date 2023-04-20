@@ -1,6 +1,8 @@
 package net.trelent.document.settings
 
 import com.intellij.openapi.options.Configurable
+import io.ktor.util.*
+import java.util.*
 import javax.swing.JComponent
 
 
