@@ -133,37 +133,3 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
     }
 
 }
-
-fun parseDocument(document: Document, project: Project, track: Boolean = true): Array<Function> {
-
-    val file = FileDocumentManager.getInstance().getFile(document);
-    if(file == null || file.extension == null || getExtensionLanguage(file.extension!!) == null){
-        return arrayOf();
-    }
-    val language = getExtensionLanguage(file.extension!!)!!
-    val functions = runBlocking {
-        ChangeDetectionService.getInstance(project).parseBlocker.withLock{
-            val innerFuncs = try{
-                val sourceCode = document.text
-                parseFunctions(
-                    language,
-                    sourceCode
-                );
-            }
-            catch(_: Exception){
-                arrayOf();
-            }
-
-            if(innerFuncs.isNotEmpty() && track) {
-                val changeDetectionService = ChangeDetectionService.getInstance(project);
-                changeDetectionService.trackState(document, innerFuncs.toList());
-            }
-            innerFuncs
-
-        }
-    }
-    project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION).parse(document, language, functions.toList())
-    return functions;
-
-
-}
