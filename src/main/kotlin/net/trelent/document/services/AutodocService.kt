@@ -1,21 +1,57 @@
 package net.trelent.document.services
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.markup.RangeHighlighter
+import com.intellij.openapi.project.Project
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.getHighlights
+import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
+import java.util.HashMap
 
-class AutodocService {
+@Service(Service.Level.PROJECT)
+class AutodocService(val project: Project): Disposable {
+
+    private val updating: HashSet<Document> = hashSetOf()
+    private val highlights: HashMap<String, ArrayList<RangeHighlighter>> = hashMapOf();
+    private val operations: HashMap<String, ArrayList<TrelentAutodocHighlighter>> = hashMapOf()
+
+    init{
+        project.messageBus.connect().subscribe(TrelentListeners.RangeUpdateListener.TRELENT_RANGE_UPDATE, object: TrelentListeners.RangeUpdateListener{
+            override fun rangeUpdate(document: Document) {
+                val editor = EditorFactory.getInstance().allEditors.find{
+                    it.document == document
+                } ?: return
+                applyHighlights(editor, ChangeDetectionService.getInstance(project).getDocChanges(document).values.map{it}.toList())
+            }
+
+        });
+
+        project.messageBus.connect().subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
+            override fun parse(document: Document, language: String, functions: List<Function>) {
+                val editor = EditorFactory.getInstance().allEditors.find{
+                    it.document == document
+                } ?: return
+                applyHighlights(editor, ChangeDetectionService.getInstance(project).getDocChanges(document).values.map{it}.toList())
+
+
+            }
+
+        });
+    }
+
     private fun applyHighlights(editor: Editor, functions: List<Function>){
-        ApplicationManager.getApplication().invokeLater{
             val highlights = getHighlights(editor, functions);
 
             val docID = ChangeDetectionService.getDocID(editor.document);
 
             this.highlights[docID] = highlights;
-        }
 
     }
 
@@ -79,6 +115,5 @@ class AutodocService {
                 }
             }
         }
-        timeout?.cancel();
     }
 }
