@@ -10,7 +10,7 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.util.concurrency.annotations.RequiresEdt
 import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
-import kotlin.Function
+import net.trelent.document.helpers.Function
 
 
 const val LAYER_PRIORITY_STEP = 5 // BASE_LAYER..LINE_MARKER_LAYER
