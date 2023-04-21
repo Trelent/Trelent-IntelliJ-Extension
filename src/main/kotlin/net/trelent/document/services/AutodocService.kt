@@ -16,7 +16,9 @@ import net.trelent.document.helpers.getHighlights
 import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
-import java.util.HashMap
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 
 @Service(Service.Level.PROJECT)
 class AutodocService(val project: Project): Disposable {
@@ -31,7 +33,7 @@ class AutodocService(val project: Project): Disposable {
                 val editor = EditorFactory.getInstance().allEditors.find{
                     it.document == document
                 } ?: return
-                applyHighlights(editor, ChangeDetectionService.getInstance(project).getDocChanges(document).values.map{it}.toList())
+                resetHighlights(editor)
             }
 
         });
@@ -41,13 +43,53 @@ class AutodocService(val project: Project): Disposable {
                 val editor = EditorFactory.getInstance().allEditors.find{
                     it.document == document
                 } ?: return
-                applyHighlights(editor, ChangeDetectionService.getInstance(project).getDocChanges(document).values.map{it}.toList())
+                resetHighlights(editor)
 
 
             }
 
         });
     }
+
+    private fun getFunctionTags(functions: List<Function>): Map<TrelentSettingsState.TrelentTag, List<Function>> {
+        val returnObj: EnumMap<TrelentSettingsState.TrelentTag, ArrayList<Function>> =
+            EnumMap(TrelentSettingsState.TrelentTag::class.java);
+
+        //initialize the enum map with an array list at each index
+        TrelentSettingsState.TrelentTag.values().forEach{
+            returnObj[it] = arrayListOf()
+        }
+
+        //Get the default mode specified in the user settings, and create the regex to find tags in the code
+        val mode = TrelentSettingsState.getInstance().settings.mode;
+        val regex = "${TrelentSettingsState.TrelentTag.AUTO}|${TrelentSettingsState.TrelentTag.HIGHLIGHT}|${TrelentSettingsState.TrelentTag.IGNORE}g".toRegex()
+
+        //For each function, get the text, and append the docstrings if they exist
+        functions.stream().forEach {
+            var text = it.text;
+            if (it.docstring != null) {
+                text += it.docstring
+            }
+            //Get tag, and if can't find one, set to settings default
+            val tag = try {
+                when (regex.matchEntire(text)?.value) {
+                    TrelentSettingsState.TrelentTag.AUTO.tag -> TrelentSettingsState.TrelentTag.AUTO
+                    TrelentSettingsState.TrelentTag.HIGHLIGHT.tag -> TrelentSettingsState.TrelentTag.HIGHLIGHT
+                    TrelentSettingsState.TrelentTag.IGNORE.tag -> TrelentSettingsState.TrelentTag.IGNORE
+                    else -> mode
+                }
+            } catch (e: Exception) {
+                mode
+            }
+
+            //Add the function to the list for the given tag
+
+            returnObj[tag]?.add(it);
+
+        }
+        return returnObj
+    }
+
 
     private fun resetHighlights(editor: Editor){
         try {
@@ -56,7 +98,7 @@ class AutodocService(val project: Project): Disposable {
             clearHighlights(editor);
             clearOperations(editor);
 
-            val changes = ChangeDetectionService.getInstance().getDocChanges(editor.document);
+            val changes = ChangeDetectionService.getInstance(project).getDocChanges(editor.document);
 
             if (changes.size > 0) {
 
@@ -64,23 +106,8 @@ class AutodocService(val project: Project): Disposable {
                 val highlightFunctions = getFunctionTags(changes.values.toList())[TrelentSettingsState.TrelentTag.HIGHLIGHT];
 
                 if(highlightFunctions != null){
-                    //Cancel the job pre-emptively, so that any jobs that are currently running, will be cancelled
-                    if(highlightJob != null){
-                        highlightJob?.cancel();
-                    }
-                    ApplicationManager.getApplication().invokeLater{
-                        //Then, cancel the job when this runnable is called. This makes it so any invokations called after this, will be cancelled
-                        if(highlightJob != null){
-                            highlightJob?.cancel();
-                        }
-                        highlightJob = runBlocking{
-                            launch{
-                                applyHighlights(editor, highlightFunctions)
-                                createOperations(editor, highlightFunctions);
-                            }
-                        }
-
-                    }
+                    applyHighlights(editor, highlightFunctions)
+                    createOperations(editor, highlightFunctions);
 
                 }
 
