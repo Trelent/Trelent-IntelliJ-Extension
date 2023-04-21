@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.getHighlights
+import net.trelent.document.helpers.writeDocstringsFromFunctions
 import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
@@ -31,7 +32,7 @@ class AutodocService(val project: Project): Disposable {
         project.messageBus.connect().subscribe(TrelentListeners.RangeUpdateListener.TRELENT_RANGE_UPDATE, object: TrelentListeners.RangeUpdateListener{
             override fun rangeUpdate(document: Document) {
                 val editor = EditorFactory.getInstance().allEditors.find{
-                    it.document == document
+                    it.document == document && it.project == project
                 } ?: return
                 resetHighlights(editor)
             }
@@ -41,14 +42,62 @@ class AutodocService(val project: Project): Disposable {
         project.messageBus.connect().subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
             override fun parse(document: Document, language: String, functions: List<Function>) {
                 val editor = EditorFactory.getInstance().allEditors.find{
-                    it.document == document
+                    it.document == document && it.project == project
                 } ?: return
                 resetHighlights(editor)
+                updateDocstrings(editor)
 
 
             }
 
         });
+    }
+
+    fun updateDocstrings(editor: Editor) {
+        val doc = editor.document;
+        try {
+
+            //If the document is already in the middle of being updated, lets skip it
+
+            if (updating.contains(doc)) {
+                return;
+            }
+
+            //mark this document as being updated
+
+            updating.add(doc);
+
+            //Get changed functions
+
+            val changeDetectionService = ChangeDetectionService.getInstance(project)
+
+            changeDetectionService.getHistory(doc).allFunctions;
+
+            val functionsToDocument = changeDetectionService.getDocChanges(doc);
+
+            //Get function tags, as a hashmap
+
+            val taggedFunctions = getFunctionTags(functionsToDocument.values.toList());
+
+            //If there are no updates, return
+            if(taggedFunctions.values.stream().flatMap{
+                    it.stream()
+                }.count() == 0L){
+                updating.remove(doc);
+                return;
+            }
+
+            //Get functions tagged as AUTO
+            val autoFunctions = taggedFunctions[TrelentSettingsState.TrelentTag.AUTO]!!;
+
+            //Write docstrings for those functions
+            writeDocstringsFromFunctions(autoFunctions, editor, editor.project!!);
+
+        } finally {
+            updating.remove(doc);
+        }
+
+
     }
 
     private fun getFunctionTags(functions: List<Function>): Map<TrelentSettingsState.TrelentTag, List<Function>> {

@@ -23,6 +23,8 @@
         />
         <applicationService serviceImplementation="net.trelent.document.settings.TrelentSettingsState"/>
         <projectService serviceImplementation="net.trelent.document.services.ChangeDetectionService" preload="true"/>
+        <projectService serviceImplementation="net.trelent.document.services.CodeParserService"/>
+        <projectService serviceImplementation="net.trelent.document.services.AutodocService" preload="true"/>
         <notificationGroup id="Trelent Error Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Info Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
         <notificationGroup id="Trelent Warning Notification Group" displayType="BALLOON" key="notification.group.trelent"/>
