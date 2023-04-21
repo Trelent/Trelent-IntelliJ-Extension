@@ -122,7 +122,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             println("Refreshing documentation")
 
             try{
-                val parsedFunctions: List<Function> = ChangeDetectionService.getInstance().getHistory(document).allFunctions
+                val parsedFunctions: List<Function> = ChangeDetectionService.getInstance(project).getHistory(document).allFunctions
 
 
                 val documentedFunctions: Float = parsedFunctions.count {
@@ -151,7 +151,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
                         val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
 
-                        val parsedFunctions = ChangeDetectionService.getInstance().getHistory(editor.document).allFunctions
+                        val parsedFunctions = ChangeDetectionService.getInstance(project).getHistory(editor.document).allFunctions
 
                         val documentedFunctions: Float = parsedFunctions.count {
                             it.docstring != null

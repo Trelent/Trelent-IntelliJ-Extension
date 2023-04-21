@@ -4,6 +4,7 @@ import com.intellij.AppTopics
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
@@ -12,6 +13,7 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
@@ -24,15 +26,16 @@ import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
 
+@Service(Service.Level.PROJECT)
 
-class ChangeDetectionService: Disposable{
+class ChangeDetectionService(private val project: Project): Disposable{
     companion object{
 
         @JvmStatic
         private val LEVENSHTEIN_UPDATE_THRESHOLD = 50;
 
-        fun getInstance(): ChangeDetectionService {
-            return service<ChangeDetectionService>()
+        fun getInstance(project: Project): ChangeDetectionService {
+            return project.service<ChangeDetectionService>()
         }
 
         fun getDocID(doc: Document): String {
@@ -63,9 +66,15 @@ class ChangeDetectionService: Disposable{
 
     init{
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
+
             //On document changed
             override fun documentChanged(event: DocumentEvent) {
                 try {
+                    val thisProject = FileDocumentManager.getInstance().getFile(event.document)
+                        ?.let { ProjectLocator.getInstance().guessProjectForFile(it) }
+                    if(thisProject == null || thisProject != project){
+                        return;
+                    }
                     //Call to super (Could be redundant)
                     super.documentChanged(event)
                         //Create job on dispatch thread, and cancel old one if it exists
@@ -231,39 +240,29 @@ class ChangeDetectionService: Disposable{
 
         val offsetDiff = event.newLength - event.oldLength;
         val oldEndIndex = event.offset + event.oldLength;
-        ApplicationManager.getApplication().invokeLater{
-            runBlocking{
-                rangeBlocker.withLock{
-                    parseBlocker.withLock{
-                        val functions = getHistory(doc).allFunctions
-                        functions.forEach{function ->
-                            try{
-                                val bottomOffset = function.offsets[1];
+        val functions = getHistory(doc).allFunctions
+        functions.forEach{function ->
+            try{
+                val bottomOffset = function.offsets[1];
 
-                                if(oldEndIndex <= bottomOffset){
-                                    if(function.docstring_range_offsets != null){
-                                        val docRange = function.docstring_range_offsets!!;
-                                        if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
-                                        if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
-                                    }
-                                    if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
-                                    if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
-                                    if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
-                                }
-                            }
-                            finally{
-
-                            }
-
-
-                        }
-                        refreshDocChanges(doc);
+                if(oldEndIndex <= bottomOffset){
+                    if(function.docstring_range_offsets != null){
+                        val docRange = function.docstring_range_offsets!!;
+                        if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
+                        if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
                     }
+                    if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
+                    if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
+                    if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
                 }
-
+            }
+            finally{
 
             }
+
+
         }
+        refreshDocChanges(doc);
 
 
     }

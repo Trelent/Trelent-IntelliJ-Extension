@@ -142,7 +142,7 @@ fun parseDocument(document: Document, project: Project, track: Boolean = true): 
     }
     val language = getExtensionLanguage(file.extension!!)!!
     val functions = runBlocking {
-        ChangeDetectionService.getInstance().parseBlocker.withLock{
+        ChangeDetectionService.getInstance(project).parseBlocker.withLock{
             val innerFuncs = try{
                 val sourceCode = document.text
                 parseFunctions(
@@ -155,7 +155,7 @@ fun parseDocument(document: Document, project: Project, track: Boolean = true): 
             }
 
             if(innerFuncs.isNotEmpty() && track) {
-                val changeDetectionService = ChangeDetectionService.getInstance();
+                val changeDetectionService = ChangeDetectionService.getInstance(project);
                 changeDetectionService.trackState(document, innerFuncs.toList());
             }
             innerFuncs
