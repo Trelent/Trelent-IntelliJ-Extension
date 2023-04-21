@@ -9,9 +9,12 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.project.Project
 import com.jetbrains.rd.util.printlnError
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.getHighlights
 import net.trelent.document.listeners.TrelentListeners
+import net.trelent.document.settings.TrelentSettingsState
 import net.trelent.document.ui.highlighters.TrelentAutodocHighlighter
 import java.util.HashMap
 
@@ -45,6 +48,47 @@ class AutodocService(val project: Project): Disposable {
 
         });
     }
+
+    private fun resetHighlights(editor: Editor){
+        try {
+
+            //Clear old instances of the highlights
+            clearHighlights(editor);
+            clearOperations(editor);
+
+            val changes = ChangeDetectionService.getInstance().getDocChanges(editor.document);
+
+            if (changes.size > 0) {
+
+                //If there are changes, get the functions that are tagged to be highlighted
+                val highlightFunctions = getFunctionTags(changes.values.toList())[TrelentSettingsState.TrelentTag.HIGHLIGHT];
+
+                if(highlightFunctions != null){
+                    //Cancel the job pre-emptively, so that any jobs that are currently running, will be cancelled
+                    if(highlightJob != null){
+                        highlightJob?.cancel();
+                    }
+                    ApplicationManager.getApplication().invokeLater{
+                        //Then, cancel the job when this runnable is called. This makes it so any invokations called after this, will be cancelled
+                        if(highlightJob != null){
+                            highlightJob?.cancel();
+                        }
+                        highlightJob = runBlocking{
+                            launch{
+                                applyHighlights(editor, highlightFunctions)
+                                createOperations(editor, highlightFunctions);
+                            }
+                        }
+
+                    }
+
+                }
+
+            }
+        } finally {}
+
+    }
+
 
     private fun applyHighlights(editor: Editor, functions: List<Function>){
             val highlights = getHighlights(editor, functions);
