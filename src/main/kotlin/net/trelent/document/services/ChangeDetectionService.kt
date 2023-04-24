@@ -54,6 +54,8 @@ class ChangeDetectionService(private val project: Project): Disposable{
 
     private var timeout: Job? = null;
 
+    private var loadJob: Job? = null;
+
     private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
 
     private val changedFunctions: HashMap<String, HashMap<String, Function>> = hashMapOf();
@@ -113,10 +115,11 @@ class ChangeDetectionService(private val project: Project): Disposable{
     }
 
      fun docLoad(document: Document){
-         try{
-             CodeParserService.getInstance(project).parseDocument(document)
-         }
-         finally{}
+             try{
+                     CodeParserService.getInstance(project).runParseJob(document)
+             }
+             finally{}
+
     }
 
      fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {

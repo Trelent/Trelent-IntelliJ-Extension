@@ -16,7 +16,7 @@ import java.util.*
 
 
 val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python", "typescript")
-private const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
+const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
 private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
@@ -119,21 +119,6 @@ fun getLatestVersion(): String? {
         printlnError(e.message.toString())
         null
     }
-}
-
-fun parseFunctions(language: String, source: String): Array<Function> {
-    val req = ParsingRequest(language = language, source = source)
-    val body = Gson().toJson(req)
-
-    try {
-        val returned = sendRequest(body, PARSE_URL).body()
-        return Gson().fromJson(returned, Array<Function>::class.java)
-    } catch (e: Exception) {
-        printlnError(e.message.toString())
-    }
-
-
-    return arrayOf()
 }
 
 fun sendRequest(body: String, url: String, token: String = ""): HttpResponse<String> {

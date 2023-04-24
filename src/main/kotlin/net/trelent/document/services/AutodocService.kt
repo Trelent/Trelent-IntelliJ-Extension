@@ -40,12 +40,13 @@ class AutodocService(val project: Project): Disposable {
         });
 
         project.messageBus.connect().subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
-            override fun parse(document: Document, language: String, functions: List<Function>) {
+            override fun parse(document: Document, language: String) {
                 val editor = EditorFactory.getInstance().allEditors.find{
                     it.document == document && it.project == project
                 } ?: return
                 resetHighlights(editor)
                 updateDocstrings(editor)
+                resetHighlights(editor)
 
 
             }

@@ -44,7 +44,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
     init{
 
         project.messageBus.connect(this).subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
-            override fun parse(document: Document, language: String, functions: List<Function>) {
+            override fun parse(document: Document, language: String) {
                 externalRefresh(document);
             }
 

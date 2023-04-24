@@ -23,7 +23,7 @@ class TrelentListeners {
                 ParseListener::class.java, Topic.BroadcastDirection.TO_PARENT);
         }
 
-        fun parse(document: Document, language: String, functions: List<Function>);
+        fun parse(document: Document, language: String);
     }
 
     interface RangeUpdateListener: EventListener {
