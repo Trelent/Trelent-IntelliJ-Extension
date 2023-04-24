@@ -15,7 +15,6 @@ import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.helpers.Function
-import net.trelent.document.helpers.parseFunctions
 import net.trelent.document.services.ChangeDetectionService
 import java.awt.Color
 import java.awt.event.MouseAdapter
@@ -51,7 +50,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         })
 
         project.messageBus.connect(this).subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener {
-            override fun documented(document: Document, language: String) {
+            override fun documented(document: Document, function: Function, language: String) {
                 externalRefresh(document);
             }
 

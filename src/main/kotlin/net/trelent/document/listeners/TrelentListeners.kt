@@ -14,7 +14,7 @@ class TrelentListeners {
                 DocumentedListener::class.java, Topic.BroadcastDirection.TO_PARENT);
         }
 
-        fun documented(document: Document, language: String);
+        fun documented(document: Document, function: Function, language: String);
     }
 
     interface ParseListener: EventListener {
