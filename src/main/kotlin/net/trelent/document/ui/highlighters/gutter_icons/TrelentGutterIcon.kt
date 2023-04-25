@@ -1,19 +1,18 @@
-package net.trelent.document.ui.highlighters
+package net.trelent.document.ui.highlighters.gutter_icons
 
 import com.intellij.codeInsight.daemon.NonHideableIconGutterMark
-import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.GutterIconRenderer
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.util.NlsContexts
-import com.intellij.util.ObjectUtils
+import net.trelent.document.helpers.Function
 import org.jetbrains.annotations.NotNull
 import org.jetbrains.annotations.Nullable
-import java.awt.event.MouseEvent
 import javax.swing.Icon
 
 
-public abstract class TrelentGutterRenderer(val myIcon: Icon, @Nullable @NlsContexts.Tooltip val myTooltip: String): GutterIconRenderer(), NonHideableIconGutterMark{
+class TrelentGutterRenderer(val editor: Editor, val function: Function, val myIcon: Icon, @Nullable @NlsContexts.Tooltip val myTooltip: String): GutterIconRenderer(), NonHideableIconGutterMark{
 
     @NotNull
     override fun getIcon(): Icon {
@@ -25,6 +24,7 @@ public abstract class TrelentGutterRenderer(val myIcon: Icon, @Nullable @NlsCont
         return myTooltip
     }
 
+
     override fun isNavigateAction(): Boolean {
         return true
     }
@@ -35,12 +35,7 @@ public abstract class TrelentGutterRenderer(val myIcon: Icon, @Nullable @NlsCont
 
     @NotNull
     override fun getAlignment(): Alignment {
-        return Alignment.LEFT
-    }
-
-    @Nullable
-    override fun getClickAction(): AnAction? {
-        return DumbAwareAction.create { e: AnActionEvent -> performAction(e) }
+        return Alignment.RIGHT
     }
 
     override fun equals(other: Any?): Boolean {
@@ -52,18 +47,14 @@ public abstract class TrelentGutterRenderer(val myIcon: Icon, @Nullable @NlsCont
         return System.identityHashCode(this)
     }
 
-    protected open fun performAction(@NotNull e: AnActionEvent) {
-        try{
-            val mouseEvent: MouseEvent = ObjectUtils.tryCast(e.inputEvent, MouseEvent::class.java)!!;
-            if (mouseEvent.button == MouseEvent.BUTTON1) {
-                handleMouseClick()
-            }
-        }
-        finally{
+    override fun getPopupMenuActions(): ActionGroup {
 
-        }
+        return GutterActionGroup(function, editor);
+    }
+
+    fun performAction(@NotNull e: AnActionEvent) {
 
     }
 
-    protected abstract fun handleMouseClick()
+    //protected abstract fun handleMouseClick()
 }

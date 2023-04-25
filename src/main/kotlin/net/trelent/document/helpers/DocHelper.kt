@@ -119,7 +119,7 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                         // Update docs progress
                         val publisher =
                             project.messageBus.syncPublisher(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
-                        publisher.documented(document, language);
+                        publisher.documented(document, currentFunction, language);
                     }
 
 

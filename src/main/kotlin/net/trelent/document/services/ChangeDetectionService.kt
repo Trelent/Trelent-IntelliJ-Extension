@@ -22,6 +22,7 @@ import net.trelent.document.listeners.TrelentListeners
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
+import kotlin.math.abs
 
 @Service(Service.Level.PROJECT)
 
@@ -53,8 +54,6 @@ class ChangeDetectionService(private val project: Project): Disposable{
     }
 
     private var timeout: Job? = null;
-
-    private var loadJob: Job? = null;
 
     private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
 
@@ -112,11 +111,17 @@ class ChangeDetectionService(private val project: Project): Disposable{
             }
         });
 
+        project.messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener{
+            override fun documented(document: Document, function: Function, language: String) {
+                clearDocChange(document, function);
+            }
+
+        })
     }
 
      fun docLoad(document: Document){
              try{
-                     CodeParserService.getInstance(project).runParseJob(document)
+                 CodeParserService.getInstance(project).runParseJob(document)
              }
              finally{}
 
@@ -209,14 +214,24 @@ class ChangeDetectionService(private val project: Project): Disposable{
 
     private fun addDocChange(doc: Document, func: Function) {
         val docChanges = getDocChanges(doc);
-        val funcId = getFuncID(func);
+        val funcId = validateFunc(doc, func);
         docChanges[funcId] = func;
     }
 
-    private fun deleteDocChange(doc: Document, func: Function){
-        val funcID = getFuncID(func);
+    fun clearDocChange(doc: Document, func: Function){
+        if(deleteDocChange(doc, func)){
+            project.messageBus.syncPublisher(TrelentListeners.ChangeUpdate.TRELENT_CHANGE_UPDATE).changeUpdate(doc);
+        }
+    }
+
+    private fun deleteDocChange(doc: Document, func: Function): Boolean{
+        val funcID = validateFunc(doc, func);
         val changes = getDocChanges(doc);
-        changes.remove(funcID);
+        if(changes.containsKey(funcID)){
+                changes.remove(funcID)
+                return true
+            }
+        return false;
     }
 
     fun getDocChanges(doc: Document): HashMap<String, Function> {
@@ -232,13 +247,16 @@ class ChangeDetectionService(private val project: Project): Disposable{
     fun updateFunctionRanges(event: DocumentEvent) {
         val doc = event.document
 
+
         val offsetDiff = event.newLength - event.oldLength;
         val oldEndIndex = event.offset + event.oldLength;
         runBlocking{
             functionUpdateBlocker.withLock{
                 val functions = getHistory(doc).allFunctions
+                val fileText = doc.text;
                 functions.forEach{function ->
                     try{
+                        val funcID = validateFunc(doc, function)
                         val bottomOffset = function.offsets[1];
 
                         if(oldEndIndex <= bottomOffset){
@@ -251,6 +269,7 @@ class ChangeDetectionService(private val project: Project): Disposable{
                             if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
                             if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
                         }
+
                     }
                     finally{
 
@@ -275,6 +294,12 @@ class ChangeDetectionService(private val project: Project): Disposable{
         return trackID;
     }
 
+    private fun validateFunc(doc: Document, func: Function): String{
+        val docID = validateDoc(doc);
+        val funcID = getFuncID(func);
+        return funcID
+    }
+
     private fun refreshDocChanges(doc: Document){
         val trackID = validateDoc(doc);
 
@@ -293,7 +318,7 @@ class ChangeDetectionService(private val project: Project): Disposable{
 
         }
         changedFunctions?.forEach{function ->
-            this.changedFunctions[trackID]?.put(getFuncID(function), function);
+            this.changedFunctions[trackID]?.put(validateFunc(doc, function), function);
         }
 
 
@@ -307,7 +332,7 @@ class ChangeDetectionService(private val project: Project): Disposable{
             it
         }.toHashSet()
         functions.forEach{
-            val funcID = getFuncID(it);
+            val funcID = validateFunc(doc, it);
 
             if(keys.contains(funcID)){
                 changedFunctions[funcID] = it
@@ -320,6 +345,7 @@ class ChangeDetectionService(private val project: Project): Disposable{
 
     override fun dispose() {
         functionUpdateBlocker.preventFreeze()
+        timeout?.cancel();
     }
 
     data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);

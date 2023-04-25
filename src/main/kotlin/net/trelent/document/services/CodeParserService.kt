@@ -69,9 +69,6 @@ class CodeParserService(private val project: Project): Disposable {
             } catch (e: CancellationException) {
                 println("Parse task cancelled")
             }
-            catch(_: Exception){
-                printlnError("Error during parsing")
-            }
             finally{
             }
 

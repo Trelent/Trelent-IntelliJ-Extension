@@ -9,6 +9,7 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import icons.TrelentPluginIcons
 import net.trelent.document.helpers.Function
+import net.trelent.document.ui.highlighters.gutter_icons.TrelentGutterRenderer
 import javax.swing.Icon
 
 
@@ -40,36 +41,14 @@ abstract class TrelentAutodocHighlighter(editor: Editor, offset: Int) : Disposab
     protected abstract fun createRenderer(): GutterIconRenderer?
 
 
-    class TrelentIgnore(editor: Editor, function: Function): TrelentAutodocHighlighter(editor, function.offsets[0]) {
+    class TrelentAutodocIcon(val editor: Editor, val function: Function): TrelentAutodocHighlighter(editor, function.offsets[0]) {
 
         init{
             update()
         }
         override fun createRenderer(): GutterIconRenderer {
             val icon: Icon = TrelentPluginIcons.DocumentActionIcon;
-            return object :TrelentGutterRenderer(icon, "Ignore Changes"){
-                override fun handleMouseClick() {
-                    println("Mouse clicked! (Ignore)")
-                }
-
-            }
-        }
-
-    }
-
-    class TrelentAccept(editor: Editor, function: Function): TrelentAutodocHighlighter(editor, function.offsets[0]) {
-
-        init{
-            update()
-        }
-        override fun createRenderer(): GutterIconRenderer {
-            val icon: Icon = TrelentPluginIcons.DocumentActionIcon;
-            return object :TrelentGutterRenderer(icon, "Trelent: Generate new docstring"){
-                override fun handleMouseClick() {
-                    println("Mouse clicked! (Accept)")
-                }
-
-            }
+            return TrelentGutterRenderer(editor, function, icon, "Trelent: Change Detected");
         }
 
     }

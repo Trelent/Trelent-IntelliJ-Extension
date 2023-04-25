@@ -9,8 +9,6 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.project.Project
 import com.jetbrains.rd.util.printlnError
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.getHighlights
 import net.trelent.document.helpers.writeDocstringsFromFunctions
@@ -52,6 +50,16 @@ class AutodocService(val project: Project): Disposable {
             }
 
         });
+
+        project.messageBus.connect().subscribe(TrelentListeners.ChangeUpdate.TRELENT_CHANGE_UPDATE, object: TrelentListeners.ChangeUpdate{
+            override fun changeUpdate(document: Document) {
+                val editor = EditorFactory.getInstance().allEditors.find{
+                    it.document == document
+                } ?: return;
+                resetHighlights(editor);
+            }
+
+        })
     }
 
     fun updateDocstrings(editor: Editor) {
@@ -181,8 +189,7 @@ class AutodocService(val project: Project): Disposable {
         val docID = ChangeDetectionService.getDocID(editor.document);
         functions.forEach{function ->
             try{
-                ops.add(TrelentAutodocHighlighter.TrelentAccept(editor, function))
-                ops.add(TrelentAutodocHighlighter.TrelentIgnore(editor, function))
+                ops.add(TrelentAutodocHighlighter.TrelentAutodocIcon(editor, function))
             }
             catch(ill: IllegalStateException){
                 printlnError("Issue creating operations for function with offsets: ${function.offsets}, on document with length ${editor.document.text.length}")
@@ -195,25 +202,24 @@ class AutodocService(val project: Project): Disposable {
 
     private fun clearOperations(editor: Editor){
         val docID = ChangeDetectionService.getDocID(editor.document);
-
-        if(operations[docID] != null){
-            val ops = operations[docID]?.map{
-                it
-            }
-            operations[docID]?.clear();
-            ops?.forEach{ gutterIcon ->
-                ApplicationManager.getApplication().invokeLater{
-                    gutterIcon.dispose();
-                }
-            }
-
+        val ops = operations[docID]?.map{
+            it
         }
+        operations[docID]?.clear();
+        ops?.forEach{ gutterIcon ->
+            ApplicationManager.getApplication().invokeLater{
+                gutterIcon.dispose();
+            }
+        }
+
 
     }
 
     private fun clearHighlights(editor: Editor){
         val trackID = ChangeDetectionService.getDocID(editor.document);
-        highlights[trackID]?.forEach{
+        val highlightList = highlights[trackID]?.map{it}?.toList()
+        highlights[trackID]?.clear();
+        highlightList?.forEach{
             ApplicationManager.getApplication().invokeLater{
                 it.dispose();
             }

@@ -35,5 +35,13 @@ class TrelentListeners {
         fun rangeUpdate(document: Document);
     }
 
+    interface ChangeUpdate: EventListener {
+        companion object{
+            @JvmStatic val TRELENT_CHANGE_UPDATE: Topic<ChangeUpdate> = Topic(ChangeUpdate::class.java, Topic.BroadcastDirection.TO_PARENT);
+        }
+
+        fun changeUpdate(document: Document)
+    }
+
 
 }
