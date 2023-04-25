@@ -120,17 +120,17 @@ class AutodocService(val project: Project): Disposable {
 
         //Get the default mode specified in the user settings, and create the regex to find tags in the code
         val mode = TrelentSettingsState.getInstance().settings.mode;
-        val regex = "${TrelentSettingsState.TrelentTag.AUTO}|${TrelentSettingsState.TrelentTag.HIGHLIGHT}|${TrelentSettingsState.TrelentTag.IGNORE}g".toRegex()
+        val regex = "${TrelentSettingsState.TrelentTag.AUTO.tag}|${TrelentSettingsState.TrelentTag.HIGHLIGHT.tag}|${TrelentSettingsState.TrelentTag.IGNORE.tag}".toRegex(setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
 
         //For each function, get the text, and append the docstrings if they exist
-        functions.stream().forEach {
+        functions.forEach {
             var text = it.text;
             if (it.docstring != null) {
                 text += it.docstring
             }
             //Get tag, and if can't find one, set to settings default
             val tag = try {
-                when (regex.matchEntire(text)?.value) {
+                when (regex.find(text)?.value) {
                     TrelentSettingsState.TrelentTag.AUTO.tag -> TrelentSettingsState.TrelentTag.AUTO
                     TrelentSettingsState.TrelentTag.HIGHLIGHT.tag -> TrelentSettingsState.TrelentTag.HIGHLIGHT
                     TrelentSettingsState.TrelentTag.IGNORE.tag -> TrelentSettingsState.TrelentTag.IGNORE
