@@ -27,7 +27,7 @@ fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHig
                 val start = function.offsets[0]
                 val end = function.offsets[1]
 
-                if(editor.document.text.length > end && editor.document.text.length > start){
+                if(editor.document.text.length >= end && editor.document.text.length > start){
                     ApplicationManager.getApplication().runWriteAction{
                         val attributesKey =
                             TextAttributesKey.createTextAttributesKey("TRELENT_HIGHLIGHT")
