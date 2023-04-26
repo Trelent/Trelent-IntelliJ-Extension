@@ -52,9 +52,5 @@ class TrelentGutterRenderer(val editor: Editor, val function: Function, val myIc
         return GutterActionGroup(function, editor);
     }
 
-    fun performAction(@NotNull e: AnActionEvent) {
-
-    }
-
     //protected abstract fun handleMouseClick()
 }

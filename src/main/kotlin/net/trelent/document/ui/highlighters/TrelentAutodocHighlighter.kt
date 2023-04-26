@@ -22,7 +22,7 @@ abstract class TrelentAutodocHighlighter(editor: Editor, offset: Int) : Disposab
             throw IllegalStateException()
         }
         ApplicationManager.getApplication().runWriteAction{
-            highlighter = editor.markupModel.addRangeHighlighter(null, offset, offset, HighlighterLayer.ADDITIONAL_SYNTAX,
+            highlighter = editor.markupModel.addRangeHighlighter(null, offset, offset, HighlighterLayer.ELEMENT_UNDER_CARET,
                 HighlighterTargetArea.LINES_IN_RANGE)
         }
 
