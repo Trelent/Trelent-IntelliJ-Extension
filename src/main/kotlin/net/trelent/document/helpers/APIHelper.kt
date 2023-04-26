@@ -76,7 +76,8 @@ data class Function(
     var name: String,
     var params: Array<String>,
     var offsets: Array<Int>,
-    var text: String
+    var text: String,
+    var diff: Int = 0
 ){
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

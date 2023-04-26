@@ -194,19 +194,27 @@ class ChangeDetectionService(private val project: Project): Disposable{
 
         idMatching.forEach{
             val funcPair = it.value;
-            if(funcPair.containsKey("old")){
-                if(funcPair.containsKey("new")){
-                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >= LEVENSHTEIN_UPDATE_THRESHOLD){
-                        returnObj["updated"]?.add(funcPair["new"]!!);
+            try{
+                if(funcPair.containsKey("old")){
+                    if(funcPair.containsKey("new")){
+                        funcPair["new"]!!.diff += funcPair["old"]!!.diff + compareFunctions(funcPair["new"]!!, funcPair["old"]!!);
+
+                        if(funcPair["new"]!!.diff >= LEVENSHTEIN_UPDATE_THRESHOLD){
+                            returnObj["updated"]?.add(funcPair["new"]!!);
+                        }
+                    }
+                    else{
+                        returnObj["deleted"]?.add(funcPair["old"]!!);
                     }
                 }
                 else{
-                    returnObj["deleted"]?.add(funcPair["old"]!!);
+                    returnObj["new"]?.add(funcPair["new"]!!);
                 }
             }
-            else{
-                returnObj["new"]?.add(funcPair["new"]!!);
+            finally{
+
             }
+
         }
 
         return returnObj;
