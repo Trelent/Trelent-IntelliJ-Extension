@@ -47,6 +47,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         PASSIVE(1250, "Passive"),
         NEUTRAL(750, "Neutral"),
         AGGRESSIVE(250, "Aggressive");
+
         override fun toString(): String {
             return settingName
         }
