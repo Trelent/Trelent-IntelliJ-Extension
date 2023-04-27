@@ -236,8 +236,9 @@ class ChangeDetectionService(private val project: Project): Disposable{
         val funcID = validateFunc(doc, func);
         val changes = getDocChanges(doc);
         if(changes.containsKey(funcID)){
-                changes.remove(funcID)
-                return true
+                func.diff = 0;
+                changes.remove(funcID);
+                return true;
             }
         return false;
     }
