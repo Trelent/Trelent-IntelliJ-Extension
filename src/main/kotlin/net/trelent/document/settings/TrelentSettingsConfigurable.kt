@@ -36,8 +36,8 @@ class TrelentSettingsConfigurable : Configurable {
         modified = modified or (mySettingsComponent?.getJavaFormat() !== settings.javaFormat)
         modified = modified or (mySettingsComponent?.getJavascriptFormat() !== settings.javascriptFormat)
         modified = modified or (mySettingsComponent?.getPythonFormat() !== settings.pythonFormat)
-        modified = modified or (mySettingsComponent?.getAutodocThreshold()?.toUpperCasePreservingASCIIRules() !== settings.threshold.name)
-        modified = modified or (mySettingsComponent?.getAutodocMode()?.toUpperCasePreservingASCIIRules() !== settings.mode.name)
+        modified = modified or (mySettingsComponent?.getAutodocThreshold() !== settings.threshold)
+        modified = modified or (mySettingsComponent?.getAutodocMode() !== settings.mode)
         return modified
     }
 
@@ -47,8 +47,8 @@ class TrelentSettingsConfigurable : Configurable {
         settings.javaFormat = mySettingsComponent?.getJavaFormat()!!
         settings.javascriptFormat = mySettingsComponent?.getJavascriptFormat()!!
         settings.pythonFormat = mySettingsComponent?.getPythonFormat()!!
-        settings.threshold = TrelentSettingsState.AutodocThreshold.valueOf(mySettingsComponent?.getAutodocThreshold()?.toUpperCasePreservingASCIIRules()!!)
-        settings.mode = TrelentSettingsState.TrelentTag.valueOf(mySettingsComponent?.getAutodocMode()?.toUpperCasePreservingASCIIRules()!!);
+        settings.threshold = mySettingsComponent?.getAutodocThreshold()!!
+        settings.mode = mySettingsComponent?.getAutodocMode()!!;
     }
 
     override fun reset() {
@@ -57,9 +57,7 @@ class TrelentSettingsConfigurable : Configurable {
         mySettingsComponent?.setJavaFormat(settings.javaFormat)
         mySettingsComponent?.setJavascriptFormat(settings.javascriptFormat)
         mySettingsComponent?.setPythonFormat(settings.pythonFormat)
-        mySettingsComponent?.setAutodocThreshold(settings.threshold.name.toLowerCasePreservingASCIIRules()
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() })
-        mySettingsComponent?.setAutodocMode(settings.threshold.name.toLowerCasePreservingASCIIRules()
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() })
+        mySettingsComponent?.setAutodocThreshold(settings.threshold)
+        mySettingsComponent?.setAutodocMode(settings.mode)
     }
 }

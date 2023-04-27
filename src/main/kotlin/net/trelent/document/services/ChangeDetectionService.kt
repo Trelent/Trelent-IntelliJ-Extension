@@ -19,6 +19,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.trelent.document.helpers.Function
 import net.trelent.document.listeners.TrelentListeners
+import net.trelent.document.settings.TrelentSettingsState
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -192,6 +193,8 @@ class ChangeDetectionService(private val project: Project): Disposable{
             return Levenshtein.distance(fun1.body, fun2.body);
         }
 
+        val changeThreshold = TrelentSettingsState.getInstance().settings.threshold;
+
         idMatching.forEach{
             val funcPair = it.value;
             try{
@@ -199,7 +202,7 @@ class ChangeDetectionService(private val project: Project): Disposable{
                     if(funcPair.containsKey("new")){
                         funcPair["new"]!!.diff += funcPair["old"]!!.diff + compareFunctions(funcPair["new"]!!, funcPair["old"]!!);
 
-                        if(funcPair["new"]!!.diff >= LEVENSHTEIN_UPDATE_THRESHOLD){
+                        if(funcPair["new"]!!.diff >= changeThreshold.num){
                             returnObj["updated"]?.add(funcPair["new"]!!);
                         }
                     }

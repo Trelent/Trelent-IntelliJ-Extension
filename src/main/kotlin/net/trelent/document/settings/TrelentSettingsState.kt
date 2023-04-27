@@ -43,18 +43,23 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         var mode: TrelentTag = TrelentTag.HIGHLIGHT
     )
 
-    enum class AutodocThreshold(val num: Int){
-        PASSIVE(1250),
-        NEUTRAL(750),
-        AGGRESSIVE(250),
-        NONE(0),
+    enum class AutodocThreshold(val num: Int, private val settingName: String){
+        PASSIVE(1250, "Passive"),
+        NEUTRAL(750, "Neutral"),
+        AGGRESSIVE(250, "Aggressive");
+        override fun toString(): String {
+            return settingName
+        }
     }
 
-    enum class TrelentTag(val tag: String) {
-        AUTO("@trelent-auto"),
-        HIGHLIGHT("@trelent-highlight"),
-        IGNORE("@trelent-ignore"),
-        NONE("")
+    enum class TrelentTag(val tag: String, private val settingName: String) {
+        AUTO("@trelent-auto", "Maintain Docstrings"),
+        HIGHLIGHT("@trelent-highlight", "Highlight Globally"),
+        IGNORE("@trelent-ignore", "Highlight Per-Function");
+
+        override fun toString(): String {
+            return settingName
+        }
     }
 
     private fun showDiscordNotification(){
