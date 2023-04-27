@@ -80,11 +80,15 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                         } else {
                             docstrings[function] = docstring;
                         }
+                        if(indicator.isCanceled){
+                            return;
+                        }
                     } finally {
 
                     }
 
                 };
+
 
                 ApplicationManager.getApplication().invokeLater {
 
