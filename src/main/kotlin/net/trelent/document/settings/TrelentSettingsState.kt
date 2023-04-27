@@ -43,7 +43,7 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         var mode: TrelentTag = TrelentTag.HIGHLIGHT
     )
 
-    enum class AutodocThreshold(val num: Int, private val settingName: String){
+    enum class AutodocThreshold(val threshold: Int, private val settingName: String){
         PASSIVE(1250, "Passive"),
         NEUTRAL(750, "Neutral"),
         AGGRESSIVE(250, "Aggressive");

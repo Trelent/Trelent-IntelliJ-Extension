@@ -23,7 +23,6 @@ import net.trelent.document.settings.TrelentSettingsState
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
-import kotlin.math.abs
 
 @Service(Service.Level.PROJECT)
 
@@ -202,7 +201,7 @@ class ChangeDetectionService(private val project: Project): Disposable{
                     if(funcPair.containsKey("new")){
                         funcPair["new"]!!.diff += funcPair["old"]!!.diff + compareFunctions(funcPair["new"]!!, funcPair["old"]!!);
 
-                        if(funcPair["new"]!!.diff >= changeThreshold.num){
+                        if(funcPair["new"]!!.diff >= changeThreshold.threshold){
                             returnObj["updated"]?.add(funcPair["new"]!!);
                         }
                     }
