@@ -34,7 +34,10 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
             override fun run(indicator: ProgressIndicator) {
 
                 indicator.text = "Writing docstrings..."
-                indicator.isIndeterminate = true
+                indicator.isIndeterminate = false;
+
+                indicator.fraction = 0.0;
+
 
 
                 //FIXME: Remove this when typescript support added in backend
@@ -84,7 +87,7 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                             return;
                         }
                     } finally {
-
+                        indicator.fraction += indicator.fraction + (1.0/functions.size);
                     }
 
                 };
@@ -117,8 +120,6 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                                 document.insertString(currentFunction.docstring_offset, docstringText)
                             }
                         }
-
-
 
                         // Update docs progress
                         val publisher =
