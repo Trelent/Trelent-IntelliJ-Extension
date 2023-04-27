@@ -199,9 +199,9 @@ class ChangeDetectionService(private val project: Project): Disposable{
             try{
                 if(funcPair.containsKey("old")){
                     if(funcPair.containsKey("new")){
-                        funcPair["new"]!!.diff += funcPair["old"]!!.diff + compareFunctions(funcPair["new"]!!, funcPair["old"]!!);
+                        funcPair["new"]!!.recordedChanges += funcPair["old"]!!.recordedChanges + compareFunctions(funcPair["new"]!!, funcPair["old"]!!);
 
-                        if(funcPair["new"]!!.diff >= changeThreshold.threshold){
+                        if(funcPair["new"]!!.recordedChanges >= changeThreshold.threshold){
                             returnObj["updated"]?.add(funcPair["new"]!!);
                         }
                     }
@@ -238,7 +238,7 @@ class ChangeDetectionService(private val project: Project): Disposable{
         val funcID = validateFunc(doc, func);
         val changes = getDocChanges(doc);
         if(changes.containsKey(funcID)){
-                func.diff = 0;
+                func.recordedChanges = 0;
                 changes.remove(funcID);
                 return true;
             }
