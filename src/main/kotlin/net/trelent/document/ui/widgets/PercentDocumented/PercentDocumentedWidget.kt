@@ -15,7 +15,6 @@ import com.intellij.util.ui.update.Activatable
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.listeners.TrelentListeners
 import net.trelent.document.helpers.Function
-import net.trelent.document.helpers.parseFunctions
 import net.trelent.document.services.ChangeDetectionService
 import java.awt.Color
 import java.awt.event.MouseAdapter
@@ -38,24 +37,25 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
         @JvmStatic val EMPTY_COLOR: Color = JBColor.getHSBColor(0F, 1.0F, 0.5F)
     }
 
-    var percentDocumented by Delegates.notNull<Float>()
+    private var percentDocumented by Delegates.notNull<Float>()
     private var label: JLabel
 
     init{
 
         project.messageBus.connect(this).subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
-            override fun parse(document: Document, language: String, functions: List<Function>) {
+            override fun parse(document: Document, language: String) {
                 externalRefresh(document);
             }
 
         })
 
         project.messageBus.connect(this).subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener {
-            override fun documented(document: Document, language: String) {
+            override fun documented(document: Document, function: Function, language: String) {
                 externalRefresh(document);
             }
 
-        })
+        });
+
         label = JLabel()
         label.icon = ICON
         label.isOpaque = true
@@ -81,7 +81,6 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             val background = if(percentDocumented <= 50) ColorUtil.mix(EMPTY_COLOR, MID_COLOR, percentDocumented / 50.0)
             else ColorUtil.mix(MID_COLOR, FULL_COLOR, (percentDocumented - 50F) / 50.0)
             label.background = background
-            label.isVisible = percentDocumented >= 0
         }
         finally{
 
@@ -122,7 +121,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
             println("Refreshing documentation")
 
             try{
-                val parsedFunctions: List<Function> = ChangeDetectionService.getInstance().getHistory(document).allFunctions
+                val parsedFunctions: List<Function> = ChangeDetectionService.getInstance(project).getHistory(document).allFunctions
 
 
                 val documentedFunctions: Float = parsedFunctions.count {
@@ -151,7 +150,7 @@ class PercentDocumentedWidget(project: Project) : EditorBasedWidget(project), Cu
 
                         val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor!!
 
-                        val parsedFunctions = ChangeDetectionService.getInstance().getHistory(editor.document).allFunctions
+                        val parsedFunctions = ChangeDetectionService.getInstance(project).getHistory(editor.document).allFunctions
 
                         val documentedFunctions: Float = parsedFunctions.count {
                             it.docstring != null

@@ -16,7 +16,7 @@ import java.util.*
 
 
 val SUPPORTED_LANGUAGES = arrayOf<String>("csharp", "java", "javascript", "python", "typescript")
-private const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
+const val PARSE_URL = "https://code-parsing-server.fly.dev/parse"
 private const val VERSION_CHECK_URL          = "https://code-parsing-server.fly.dev/"
 
 // Prod Api
@@ -76,7 +76,8 @@ data class Function(
     var name: String,
     var params: Array<String>,
     var offsets: Array<Int>,
-    var text: String
+    var text: String,
+    var recordedChanges: Int = 0
 ){
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -121,21 +122,6 @@ fun getLatestVersion(): String? {
     }
 }
 
-fun parseFunctions(language: String, source: String): Array<Function> {
-    val req = ParsingRequest(language = language, source = source)
-    val body = Gson().toJson(req)
-
-    try {
-        val returned = sendRequest(body, PARSE_URL).body()
-        return Gson().fromJson(returned, Array<Function>::class.java)
-    } catch (e: Exception) {
-        printlnError(e.message.toString())
-    }
-
-
-    return arrayOf()
-}
-
 fun sendRequest(body: String, url: String, token: String = ""): HttpResponse<String> {
     val client = HttpClient.newBuilder().build()
     val request = HttpRequest.newBuilder()
@@ -148,17 +134,6 @@ fun sendRequest(body: String, url: String, token: String = ""): HttpResponse<Str
     return response
 }
 
-fun sendAuthenticatedGetRequest(url: String, token: String = ""): String {
-    val client = HttpClient.newBuilder().build()
-    val request = HttpRequest.newBuilder()
-        .uri(URI.create(url))
-        .setHeader("Authorization", "Bearer $token")
-        .GET()
-        .build()
-    val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-    return response.body()
-}
-
 fun sendGetRequest(url: String): String {
     val client = HttpClient.newBuilder().build()
     val request = HttpRequest.newBuilder()
@@ -167,15 +142,4 @@ fun sendGetRequest(url: String): String {
         .build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     return response.body()
-}
-
-fun showGenericError(title: String, message: String, project: Project) {
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        title,
-        message,
-        NotificationType.ERROR
-    )
-
-    Notifications.Bus.notify(errNotification, project)
 }

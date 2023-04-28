@@ -12,7 +12,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
-import com.intellij.openapi.editor.Editor
+import net.trelent.document.helpers.Function
 import net.trelent.document.listeners.TrelentListeners
 
 
@@ -20,8 +20,9 @@ import net.trelent.document.listeners.TrelentListeners
 class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.TrelentSettings> {
 
     init{
+        //This will notify the user when they have parsed a certain amount of functions. Currently it asks them to join the discord
         ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object : TrelentListeners.DocumentedListener{
-            override fun documented(document: Document, language: String) {
+            override fun documented(document: Document, function: Function, language: String) {
                 settings.numDocumented++;
                 if(settings.numDocumented == DOC_THRESHOLD){
                     showDiscordNotification()
@@ -39,20 +40,28 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
         var javascriptFormat: String = "jsdoc",
         var pythonFormat: String = "rest",
         var numDocumented: Int = 0,
+        var threshold: AutodocThreshold = AutodocThreshold.NEUTRAL,
+        var mode: TrelentTag = TrelentTag.HIGHLIGHT
     )
 
-    enum class AutodocThreshold(val num: Int){
-        PASSIVE(1250),
-        NEUTRAL(750),
-        AGGRESSIVE(250),
-        NONE(0),
+    enum class AutodocThreshold(val threshold: Int, private val settingName: String){
+        PASSIVE(1250, "Passive"),
+        NEUTRAL(750, "Neutral"),
+        AGGRESSIVE(250, "Aggressive");
+
+        override fun toString(): String {
+            return settingName
+        }
     }
 
-    enum class TrelentTag(val tag: String) {
-        AUTO("@trelent-auto"),
-        HIGHLIGHT("@trelent-highlight"),
-        IGNORE("@trelent-ignore"),
-        NONE("")
+    enum class TrelentTag(val tag: String, private val settingName: String) {
+        AUTO("@trelent-auto", "Maintain Docstrings"),
+        HIGHLIGHT("@trelent-highlight", "Highlight Globally"),
+        IGNORE("@trelent-ignore", "Highlight Per-Function");
+
+        override fun toString(): String {
+            return settingName
+        }
     }
 
     private fun showDiscordNotification(){
@@ -77,8 +86,8 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
 
     companion object {
 
-        private val DOC_THRESHOLD = 10;
-        private val DISCORD_LINK = "https://discord.gg/trelent"
+        @JvmStatic private val DOC_THRESHOLD = 10;
+        @JvmStatic private val DISCORD_LINK = "https://discord.gg/trelent"
         fun getInstance(): TrelentSettingsState {
             return service<TrelentSettingsState>()
         }

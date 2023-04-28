@@ -34,7 +34,10 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
             override fun run(indicator: ProgressIndicator) {
 
                 indicator.text = "Writing docstrings..."
-                indicator.isIndeterminate = true
+                indicator.isIndeterminate = false;
+
+                indicator.fraction = 0.0;
+
 
 
                 //FIXME: Remove this when typescript support added in backend
@@ -80,15 +83,22 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                         } else {
                             docstrings[function] = docstring;
                         }
+                        if(indicator.isCanceled){
+                            return;
+                        }
                     } finally {
-
+                        indicator.fraction += indicator.fraction + (1.0/functions.size);
                     }
 
                 };
 
+
                 ApplicationManager.getApplication().invokeLater {
 
+                    //Write docstrings
                     docstrings.forEach {
+
+                        //Collect docstring & function
                         val currentFunction = it.key;
                         val docstring = it.value;
                         // Get docstring and related metadata
@@ -102,24 +112,23 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                         val docstringText = docStringHead + "\n" + docStringBody;
 
                         if(currentFunction.docstring != null){
-                        // Insert the docstring
+                            // Replace existing docstring
                             WriteCommandAction.runWriteCommandAction(project) {
                                 document.replaceString(currentFunction.docstring_range_offsets!![0], currentFunction.docstring_range_offsets!![1], docstringText.trimEnd());
                             }
 
                         }
                         else{
+                            //Insert new docstring
                             WriteCommandAction.runWriteCommandAction(project){
                                 document.insertString(currentFunction.docstring_offset, docstringText)
                             }
                         }
 
-
-
                         // Update docs progress
                         val publisher =
                             project.messageBus.syncPublisher(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION);
-                        publisher.documented(document, language);
+                        publisher.documented(document, currentFunction, language);
                     }
 
 
@@ -131,39 +140,5 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
     finally{
 
     }
-
-}
-
-fun parseDocument(document: Document, project: Project, track: Boolean = true): Array<Function> {
-
-    val file = FileDocumentManager.getInstance().getFile(document);
-    if(file == null || file.extension == null || getExtensionLanguage(file.extension!!) == null){
-        return arrayOf();
-    }
-    val language = getExtensionLanguage(file.extension!!)!!
-    val functions = runBlocking {
-        ChangeDetectionService.getInstance().parseBlocker.withLock{
-            val innerFuncs = try{
-                val sourceCode = document.text
-                parseFunctions(
-                    language,
-                    sourceCode
-                );
-            }
-            catch(_: Exception){
-                arrayOf();
-            }
-
-            if(innerFuncs.isNotEmpty() && track) {
-                val changeDetectionService = ChangeDetectionService.getInstance();
-                changeDetectionService.trackState(document, innerFuncs.toList());
-            }
-            innerFuncs
-
-        }
-    }
-    project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION).parse(document, language, functions.toList())
-    return functions;
-
 
 }

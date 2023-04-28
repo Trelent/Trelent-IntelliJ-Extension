@@ -2,8 +2,7 @@ package net.trelent.document.services
 
 import com.intellij.AppTopics
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
@@ -11,28 +10,31 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener
-import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
+import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.trelent.document.helpers.Function
-import net.trelent.document.helpers.parseDocument
+import net.trelent.document.listeners.TrelentListeners
+import net.trelent.document.settings.TrelentSettingsState
 import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
 
+@Service(Service.Level.PROJECT)
 
-class ChangeDetectionService: Disposable{
+class ChangeDetectionService(private val project: Project): Disposable{
     companion object{
 
-        @JvmStatic
-        private val LEVENSHTEIN_UPDATE_THRESHOLD = 50;
 
-        fun getInstance(): ChangeDetectionService {
-            return service<ChangeDetectionService>()
+        @JvmStatic
+        private val DELAY = 500L;
+
+        fun getInstance(project: Project): ChangeDetectionService {
+            return project.service<ChangeDetectionService>()
         }
 
         fun getDocID(doc: Document): String {
@@ -51,110 +53,117 @@ class ChangeDetectionService: Disposable{
 
     private var timeout: Job? = null;
 
-    private val DELAY = 500L;
-
-    private val fileInfo: HashMap<String, DocumentState> = hashMapOf();
+    private val openDocuments: HashMap<String, DocumentState> = hashMapOf();
 
     private val changedFunctions: HashMap<String, HashMap<String, Function>> = hashMapOf();
 
-    val parseBlocker = Mutex()
+    private val functionUpdateBlocker = Mutex()
 
-    val rangeBlocker = Mutex();
 
     init{
+
+
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
+
             //On document changed
             override fun documentChanged(event: DocumentEvent) {
+                //Call to super (Could be redundant)
+                super.documentChanged(event)
                 try {
-                    //Call to super (Could be redundant)
-                    super.documentChanged(event)
-                        //Create job on dispatch thread, and cancel old one if it exists
-                        ApplicationManager.getApplication().invokeLater {
+                    val thisProject = FileDocumentManager.getInstance().getFile(event.document)
+                        ?.let { ProjectLocator.getInstance().guessProjectForFile(it) }
+                    if(thisProject == null || thisProject != project){
+                        return;
+                    }
+
+                    //Create job on dispatch thread, and cancel old one if it exists
+                    try {
+                        // *Timeout job*
+                        timeout?.cancel();
+                        //Get change detection service, and apply range changes
+                        updateFunctionRanges(event);
+                        //Create new job with an initial delay (essentially a timeout)
+                        timeout = GlobalScope.launch {
+                            delay(DELAY)
                             try {
-                                // *Timeout job*
-                                timeout?.cancel();
-                                //Get change detection service, and apply range changes
-                                updateFunctionRanges(event);
-                                //Create new job with an initial delay (essentially a timeout)
-                                timeout = GlobalScope.launch {
-                                    delay(DELAY)
-                                    try {
-                                        val file = FileDocumentManager.getInstance().getFile(event.document)
-                                        if(file != null){
-                                            docLoad(event.document, file)
-                                        }
-                                    } finally {}
-                                }
+                                docLoad(event.document)
                             } finally {}
                         }
+                    } finally {}
                 } finally {}
             }
         }, this)
+
         //On document opened/reloaded from disk
-        ApplicationManager.getApplication().messageBus.connect().subscribe(AppTopics.FILE_DOCUMENT_SYNC, object:
-            FileDocumentManagerListener {
+        project.messageBus.connect().subscribe(AppTopics.FILE_DOCUMENT_SYNC, object: FileDocumentManagerListener {
             //When a new file is opened
             override fun fileContentLoaded(file: VirtualFile, document: Document) {
                 //Call to super, just for safety
                 super.fileContentLoaded(file, document)
-                docLoad(document, file);
+                docLoad(document);
             }
             //When a file is reloaded from disk
             override fun fileContentReloaded(file: VirtualFile, document: Document) {
                 //call to super for safety
                 super.fileContentReloaded(file, document)
-                docLoad(document, file)
+                docLoad(document)
             }
         });
-    }
 
-    fun docLoad(document: Document, file: VirtualFile){
-        try{
-            //Attempt to locate editor
-            val project = ProjectLocator.getInstance().guessProjectForFile(file);
-            //If we found the editor, and the project is valid, then proceed
-            if(project != null){
-                parseDocument(document, project)
+        //On a document event, clear the function from the change detection service
+        project.messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object: TrelentListeners.DocumentedListener{
+            override fun documented(document: Document, function: Function, language: String) {
+                clearDocChange(document, function);
             }
-        }
-        finally{}
+
+        })
     }
 
-    data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
+     fun docLoad(document: Document){
+             try{
+                 CodeParserService.getInstance(project).runParseJob(document)
+             }
+             finally{}
+
+    }
 
      fun trackState(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
-        val trackID = validateDoc(doc);
+         var updateThese: HashMap<String, ArrayList<Function>>;
+         runBlocking{
+             functionUpdateBlocker.withLock{
+                 val trackID = validateDoc(doc);
 
-        val updateThese = getChangedFunctions(doc, functions);
+                 updateThese = getChangedFunctions(doc, functions);
 
-         fileInfo[trackID]?.allFunctions = functions
+                 openDocuments[trackID]?.allFunctions = functions
 
-         //Delete deleted functions
-        updateThese["deleted"]?.forEach{
-            deleteDocChange(doc, it);
-        };
+                 //Delete deleted functions
+                 updateThese["deleted"]?.forEach{
+                     deleteDocChange(doc, it);
+                 };
 
-         //add new updates
-         updateThese.keys.stream().filter{
-             it != "deleted";
-         }.map{
-             updateThese[it]!!
-         }.flatMap{
-             it.stream()
-         }.forEach{
-             addDocChange(doc, it);
+                 //add new updates
+                 updateThese.keys.stream().filter{
+                     it != "deleted";
+                 }.map{
+                     updateThese[it]!!
+                 }.flatMap{
+                     it.stream()
+                 }.forEach{
+                     addDocChange(doc, it);
+                 }
+
+                 //Reload doc changes
+                 reloadDocChanges(doc, functions);
+             }
          }
-
-
-
-         //Reload doc changes
-         reloadDocChanges(doc, functions);
 
         return updateThese;
 
     }
 
     private fun getChangedFunctions(doc: Document, functions: List<Function>): HashMap<String, ArrayList<Function>> {
+        //Get previously stored functions for this document
         val allFunctions = getHistory(doc).allFunctions;
 
         val returnObj: HashMap<String, ArrayList<Function>> = hashMapOf(Pair("new", arrayListOf()), Pair("deleted", arrayListOf()), Pair("updated", arrayListOf()));
@@ -164,6 +173,7 @@ class ChangeDetectionService: Disposable{
         }
         val idMatching: HashMap<Int, HashMap<String, Function>> = hashMapOf();
 
+        //Add new functions to idMatching map
         functions.forEach{
             val id = it.offsets[0];
             if(!idMatching.containsKey(id)){
@@ -172,6 +182,7 @@ class ChangeDetectionService: Disposable{
             idMatching[id]?.set("new", it);
         }
 
+        //Add old functions to idMatching map
         allFunctions.forEach{
             val id = it.offsets[0];
             if(!idMatching.containsKey(id)){
@@ -184,21 +195,38 @@ class ChangeDetectionService: Disposable{
             return Levenshtein.distance(fun1.body, fun2.body);
         }
 
+        val changeThreshold = TrelentSettingsState.getInstance().settings.threshold;
+
         idMatching.forEach{
             val funcPair = it.value;
-            if(funcPair.containsKey("old")){
-                if(funcPair.containsKey("new")){
-                    if(compareFunctions(funcPair["new"]!!, funcPair["old"]!!) >= LEVENSHTEIN_UPDATE_THRESHOLD){
-                        returnObj["updated"]?.add(funcPair["new"]!!);
+            try{
+                if(funcPair.containsKey("old")){
+                    //If an old function is present
+                    if(funcPair.containsKey("new")){
+                        //If an old & new function is present
+
+                        //Increment recordedChanges by diff between old & new function
+                        funcPair["new"]!!.recordedChanges += funcPair["old"]!!.recordedChanges + compareFunctions(funcPair["new"]!!, funcPair["old"]!!);
+
+                        //If the function is past the update threshold, mark it as updated
+                        if(funcPair["new"]!!.recordedChanges >= changeThreshold.threshold){
+                            returnObj["updated"]?.add(funcPair["new"]!!);
+                        }
+                    }
+                    else{
+                        //If the old function is present, but a new function isn't, mark this function as deleted
+                        returnObj["deleted"]?.add(funcPair["old"]!!);
                     }
                 }
                 else{
-                    returnObj["deleted"]?.add(funcPair["old"]!!);
+                    //If the old function isn't present, the new function must be the only thing present
+                    returnObj["new"]?.add(funcPair["new"]!!);
                 }
             }
-            else{
-                returnObj["new"]?.add(funcPair["new"]!!);
+            finally{
+
             }
+
         }
 
         return returnObj;
@@ -206,14 +234,25 @@ class ChangeDetectionService: Disposable{
 
     private fun addDocChange(doc: Document, func: Function) {
         val docChanges = getDocChanges(doc);
-        val funcId = getFuncID(func);
+        val funcId = validateFunc(doc, func);
         docChanges[funcId] = func;
     }
 
-    private fun deleteDocChange(doc: Document, func: Function){
-        val funcID = getFuncID(func);
+    fun clearDocChange(doc: Document, func: Function){
+        if(deleteDocChange(doc, func)){
+            project.messageBus.syncPublisher(TrelentListeners.ChangeUpdate.TRELENT_CHANGE_UPDATE).changeUpdate(doc);
+        }
+    }
+
+    private fun deleteDocChange(doc: Document, func: Function): Boolean{
+        val funcID = validateFunc(doc, func);
         val changes = getDocChanges(doc);
-        changes.remove(funcID);
+        if(changes.containsKey(funcID)){
+                func.recordedChanges = 0;
+                changes.remove(funcID);
+                return true;
+            }
+        return false;
     }
 
     fun getDocChanges(doc: Document): HashMap<String, Function> {
@@ -223,55 +262,64 @@ class ChangeDetectionService: Disposable{
 
     fun getHistory(doc: Document): DocumentState {
         val trackID = validateDoc(doc)
-        return fileInfo[trackID]!!;
+        return openDocuments[trackID]!!;
     }
 
     fun updateFunctionRanges(event: DocumentEvent) {
         val doc = event.document
 
+
+        //Get offsets & old end index
         val offsetDiff = event.newLength - event.oldLength;
         val oldEndIndex = event.offset + event.oldLength;
-        ApplicationManager.getApplication().invokeLater{
-            runBlocking{
-                rangeBlocker.withLock{
-                    parseBlocker.withLock{
-                        val functions = getHistory(doc).allFunctions
-                        functions.forEach{function ->
-                            try{
-                                val bottomOffset = function.offsets[1];
 
-                                if(oldEndIndex <= bottomOffset){
-                                    if(function.docstring_range_offsets != null){
-                                        val docRange = function.docstring_range_offsets!!;
-                                        if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
-                                        if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
-                                    }
-                                    if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
-                                    if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
-                                    if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
-                                }
+        runBlocking{
+            functionUpdateBlocker.withLock{
+
+                //Get functions
+                val functions = getHistory(doc).allFunctions
+                functions.forEach{function ->
+                    try{
+
+                        //Get the bottom offset of the function as this will determine whether the diff change
+                        //affects this range
+                        val bottomOffset = function.offsets[1];
+
+                        //If the change happened above the end index of the function
+                        if(oldEndIndex <= bottomOffset){
+
+                            //If there is a docstring, see if those ranges need to be updated
+                            if(function.docstring_range_offsets != null){
+                                val docRange = function.docstring_range_offsets!!;
+                                if(oldEndIndex <= docRange[0]) docRange[0] += offsetDiff
+                                if(oldEndIndex <= docRange[1]) docRange[1] += offsetDiff
                             }
-                            finally{
-
-                            }
-
-
+                            //see what function ranges need to be updated
+                            if(oldEndIndex <= function.docstring_offset) function.docstring_offset += offsetDiff
+                            if(oldEndIndex <= function.offsets[0]) function.offsets[0] += offsetDiff
+                            if(oldEndIndex <= function.offsets[1]) function.offsets[1] += offsetDiff
                         }
-                        refreshDocChanges(doc);
+
                     }
+                    finally{
+
+                    }
+
+
                 }
-
-
+                //Reload changedFunction map for this document
+                updateChangedFunctionsOffsets(doc);
+                //notify of range update
+                project.messageBus.syncPublisher(TrelentListeners.RangeUpdateListener.TRELENT_RANGE_UPDATE).rangeUpdate(doc);
             }
         }
-
-
     }
 
     private fun validateDoc(doc: Document): String {
+        //Ensure necessary fields are populated for this document, then return the ID
         val trackID = getDocID(doc);
-        if(!fileInfo.containsKey(trackID)){
-            fileInfo[trackID] = DocumentState(listOf(), hashMapOf());
+        if(!openDocuments.containsKey(trackID)){
+            openDocuments[trackID] = DocumentState(listOf(), hashMapOf());
         }
         if(!changedFunctions.containsKey(trackID)){
             changedFunctions[trackID] = hashMapOf();
@@ -279,25 +327,31 @@ class ChangeDetectionService: Disposable{
         return trackID;
     }
 
-    private fun refreshDocChanges(doc: Document){
+    private fun validateFunc(doc: Document, func: Function): String{
+        validateDoc(doc);
+        val funcID = getFuncID(func);
+        return funcID
+    }
+
+    private fun updateChangedFunctionsOffsets(doc: Document){
         val trackID = validateDoc(doc);
 
+        //Persist changed functions as code below clears the list
         val changedFunctions = changedFunctions[trackID]?.values?.map{
             it
         }
+
+        //Needed to clear list this way to prevent ConcurrentAccessError's
         val iterator = this.changedFunctions[trackID]?.iterator()
-        //Need this block to fix concurrency problems
         if(iterator != null){
             while(iterator.hasNext()){
                 iterator.next();
                 iterator.remove();
             }
         }
-        this.changedFunctions[trackID]?.iterator()?.forEach{
-
-        }
+        //Put updates in the list
         changedFunctions?.forEach{function ->
-            this.changedFunctions[trackID]?.put(getFuncID(function), function);
+            this.changedFunctions[trackID]?.put(validateFunc(doc, function), function);
         }
 
 
@@ -307,16 +361,15 @@ class ChangeDetectionService: Disposable{
         val trackID = validateDoc(doc);
         val changedFunctions = this.changedFunctions[trackID]
 
+        val keys = changedFunctions?.keys?.map{
+            it
+        }?.toHashSet() ?: return;
+        functions.forEach{
+            val funcID = validateFunc(doc, it);
 
-            val keys = changedFunctions!!.keys.map{
-                it
-            }.toHashSet()
-            functions.forEach{
-                val funcID = getFuncID(it);
-
-                if(keys.contains(funcID)){
-                    changedFunctions[funcID] = it
-                }
+            if(keys.contains(funcID)){
+                changedFunctions[funcID] = it
+            }
         }
 
 
@@ -324,7 +377,11 @@ class ChangeDetectionService: Disposable{
     }
 
     override fun dispose() {
+        functionUpdateBlocker.preventFreeze()
+        timeout?.cancel();
     }
+
+    data class DocumentState(var allFunctions: List<Function>, var updates: HashMap<String, ArrayList<Function>>);
 
 
 }

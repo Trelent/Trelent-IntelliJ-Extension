@@ -16,6 +16,7 @@ import com.intellij.openapi.project.Project
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.*
 import net.trelent.document.helpers.Function
+import net.trelent.document.services.ChangeDetectionService
 import net.trelent.document.settings.TrelentSettingsState
 import org.jetbrains.annotations.NotNull
 
@@ -57,7 +58,7 @@ class DocumentAction : AnAction() {
                 return
             }
 
-            val parsedFunctions = parseDocument(document, project);
+            val parsedFunctions = ChangeDetectionService.getInstance(project).getHistory(document).allFunctions;
 
             var offset = 0
             ApplicationManager.getApplication().runReadAction {
@@ -80,7 +81,7 @@ class DocumentAction : AnAction() {
         }
     }
 
-    fun getCurrentFunction(functions: Array<Function>, offset: Int): Function?{
+    fun getCurrentFunction(functions: List<Function>, offset: Int): Function?{
         val within: ArrayList<Function> = arrayListOf()
 
         functions.forEach{
