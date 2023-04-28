@@ -95,7 +95,10 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
 
                 ApplicationManager.getApplication().invokeLater {
 
+                    //Write docstrings
                     docstrings.forEach {
+
+                        //Collect docstring & function
                         val currentFunction = it.key;
                         val docstring = it.value;
                         // Get docstring and related metadata
@@ -109,13 +112,14 @@ fun writeDocstringsFromFunctions(functions: List<Function>, editor: Editor, proj
                         val docstringText = docStringHead + "\n" + docStringBody;
 
                         if(currentFunction.docstring != null){
-                        // Insert the docstring
+                            // Replace existing docstring
                             WriteCommandAction.runWriteCommandAction(project) {
                                 document.replaceString(currentFunction.docstring_range_offsets!![0], currentFunction.docstring_range_offsets!![1], docstringText.trimEnd());
                             }
 
                         }
                         else{
+                            //Insert new docstring
                             WriteCommandAction.runWriteCommandAction(project){
                                 document.insertString(currentFunction.docstring_offset, docstringText)
                             }

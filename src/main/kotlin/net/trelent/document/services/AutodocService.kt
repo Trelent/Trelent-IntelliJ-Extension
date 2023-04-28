@@ -27,39 +27,52 @@ class AutodocService(val project: Project): Disposable {
     private val operations: HashMap<String, ArrayList<TrelentAutodocHighlighter>> = hashMapOf()
 
     init{
-        project.messageBus.connect().subscribe(TrelentListeners.RangeUpdateListener.TRELENT_RANGE_UPDATE, object: TrelentListeners.RangeUpdateListener{
-            override fun rangeUpdate(document: Document) {
-                val editor = EditorFactory.getInstance().allEditors.find{
-                    it.document == document && it.project == project
-                } ?: return
-                resetHighlights(editor)
-            }
 
-        });
+        //Hook to range update listener. When invoked, reset document highlights
+        project.messageBus.connect().subscribe(TrelentListeners.RangeUpdateListener.TRELENT_RANGE_UPDATE,
+            object: TrelentListeners.RangeUpdateListener{
 
-        project.messageBus.connect().subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION, object: TrelentListeners.ParseListener {
-            override fun parse(document: Document, language: String) {
-                val editor = EditorFactory.getInstance().allEditors.find{
-                    it.document == document && it.project == project
-                } ?: return
-                resetHighlights(editor)
-                updateDocstrings(editor)
-                resetHighlights(editor)
-
+                override fun rangeUpdate(document: Document) {
+                    val editor = EditorFactory.getInstance().allEditors.find{
+                        it.document == document && it.project == project
+                    } ?: return
+                    resetHighlights(editor)
+                }
 
             }
+        );
 
-        });
+        //Hook to parse listener. When invoked we need to reset highlights, and update any functions marked as @trelent-auto
+        project.messageBus.connect().subscribe(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION,
+            object: TrelentListeners.ParseListener {
 
-        project.messageBus.connect().subscribe(TrelentListeners.ChangeUpdate.TRELENT_CHANGE_UPDATE, object: TrelentListeners.ChangeUpdate{
-            override fun changeUpdate(document: Document) {
-                val editor = EditorFactory.getInstance().allEditors.find{
-                    it.document == document
-                } ?: return;
-                resetHighlights(editor);
+                override fun parse(document: Document, language: String) {
+                    val editor = EditorFactory.getInstance().allEditors.find{
+                        it.document == document && it.project == project
+                    } ?: return
+                    resetHighlights(editor)
+                    updateDocstrings(editor)
+                    resetHighlights(editor)
+
+
+                }
+
             }
+        );
 
-        })
+        //Hook to miscellaneous change events, when this fires reset highlights
+        project.messageBus.connect().subscribe(TrelentListeners.ChangeUpdate.TRELENT_CHANGE_UPDATE,
+            object: TrelentListeners.ChangeUpdate{
+
+                override fun changeUpdate(document: Document) {
+                    val editor = EditorFactory.getInstance().allEditors.find{
+                        it.document == document
+                    } ?: return;
+                    resetHighlights(editor);
+                }
+
+            }
+        );
     }
 
     fun updateDocstrings(editor: Editor) {
@@ -187,6 +200,7 @@ class AutodocService(val project: Project): Disposable {
     private fun createOperations(editor: Editor, functions: List<Function>){
         val ops: ArrayList<TrelentAutodocHighlighter> = arrayListOf();
         val docID = ChangeDetectionService.getDocID(editor.document);
+
         functions.forEach{function ->
             try{
                 ops.add(TrelentAutodocHighlighter.TrelentAutodocIcon(editor, function))
@@ -201,11 +215,16 @@ class AutodocService(val project: Project): Disposable {
     }
 
     private fun clearOperations(editor: Editor){
+
         val docID = ChangeDetectionService.getDocID(editor.document);
+
+        //Persist list of ops that clear will not affect
         val ops = operations[docID]?.map{
             it
         }
         operations[docID]?.clear();
+
+        //Dispose of all gutter icons
         ops?.forEach{ gutterIcon ->
             ApplicationManager.getApplication().invokeLater{
                 gutterIcon.dispose();
@@ -217,8 +236,12 @@ class AutodocService(val project: Project): Disposable {
 
     private fun clearHighlights(editor: Editor){
         val trackID = ChangeDetectionService.getDocID(editor.document);
-        val highlightList = highlights[trackID]?.map{it}?.toList()
+
+        //Persist list of highlights that clear will not affect
+        val highlightList = highlights[trackID]?.map{it}
         highlights[trackID]?.clear();
+
+        //Dispose of all highlights
         highlightList?.forEach{
             ApplicationManager.getApplication().invokeLater{
                 it.dispose();
@@ -228,6 +251,7 @@ class AutodocService(val project: Project): Disposable {
     }
 
     override fun dispose() {
+        //Dispose of all highlights
         highlights.values.forEach{
             it.forEach{highlight ->
                 ApplicationManager.getApplication().invokeLater{
@@ -235,6 +259,7 @@ class AutodocService(val project: Project): Disposable {
                 }
             }
         }
+        highlights.clear();
         operations.values.forEach{
             it.forEach{operation ->
                 ApplicationManager.getApplication().invokeLater{
@@ -242,5 +267,6 @@ class AutodocService(val project: Project): Disposable {
                 }
             }
         }
+        operations.clear();
     }
 }

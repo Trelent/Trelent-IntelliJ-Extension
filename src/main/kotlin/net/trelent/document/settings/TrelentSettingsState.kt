@@ -20,6 +20,7 @@ import net.trelent.document.listeners.TrelentListeners
 class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.TrelentSettings> {
 
     init{
+        //This will notify the user when they have parsed a certain amount of functions. Currently it asks them to join the discord
         ApplicationManager.getApplication().messageBus.connect().subscribe(TrelentListeners.DocumentedListener.TRELENT_DOCUMENTED_ACTION, object : TrelentListeners.DocumentedListener{
             override fun documented(document: Document, function: Function, language: String) {
                 settings.numDocumented++;
@@ -85,8 +86,8 @@ class TrelentSettingsState : PersistentStateComponent<TrelentSettingsState.Trele
 
     companion object {
 
-        private val DOC_THRESHOLD = 10;
-        private val DISCORD_LINK = "https://discord.gg/trelent"
+        @JvmStatic private val DOC_THRESHOLD = 10;
+        @JvmStatic private val DISCORD_LINK = "https://discord.gg/trelent"
         fun getInstance(): TrelentSettingsState {
             return service<TrelentSettingsState>()
         }

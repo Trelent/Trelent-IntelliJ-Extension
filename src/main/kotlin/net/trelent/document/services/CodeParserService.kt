@@ -26,6 +26,7 @@ class CodeParserService(private val project: Project): Disposable {
     private var parseJob: Job? = null;
 
     init{
+        //Connect to range update, should cancel parse job as this can cause race condition
         project.messageBus.connect().subscribe(TrelentListeners.RangeUpdateListener.TRELENT_RANGE_UPDATE, object: TrelentListeners.RangeUpdateListener{
             override fun rangeUpdate(document: Document) {
                 parseJob?.cancel();
@@ -36,7 +37,6 @@ class CodeParserService(private val project: Project): Disposable {
 
     fun runParseJob(document: Document, track: Boolean = true){
         parseJob?.cancel()
-
         parseJob = GlobalScope.launch{
             parseDocument(document, track);
         }
@@ -44,23 +44,30 @@ class CodeParserService(private val project: Project): Disposable {
 
     private suspend fun parseDocument(document: Document, track: Boolean) {
             try {
+                //Get file metadata
                 val file = FileDocumentManager.getInstance().getFile(document);
                 if (file == null || file.extension == null || getExtensionLanguage(file.extension!!) == null) {
                     return
                 }
                 val language = getExtensionLanguage(file.extension!!)!!
                 val sourceCode = document.text
+
+                //Parse functions
                 val functions = parseFunctions(
                     language,
                     sourceCode
                 );
+
+                //check if the coroutine is cancelled, if so this will throw an exception
                 yield()
 
+                //Check if there are any functions present from the parser, if so track the state
                 if (functions.isNotEmpty() && track) {
                     ChangeDetectionService.getInstance(project).trackState(document, functions.toList());
                 }
 
                 ApplicationManager.getApplication().invokeLater {
+                    //Fire a parse event
                     project.messageBus.syncPublisher(TrelentListeners.ParseListener.TRELENT_PARSE_TRACK_ACTION)
                         .parse(document, language)
                 }

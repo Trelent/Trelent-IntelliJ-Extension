@@ -134,17 +134,6 @@ fun sendRequest(body: String, url: String, token: String = ""): HttpResponse<Str
     return response
 }
 
-fun sendAuthenticatedGetRequest(url: String, token: String = ""): String {
-    val client = HttpClient.newBuilder().build()
-    val request = HttpRequest.newBuilder()
-        .uri(URI.create(url))
-        .setHeader("Authorization", "Bearer $token")
-        .GET()
-        .build()
-    val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-    return response.body()
-}
-
 fun sendGetRequest(url: String): String {
     val client = HttpClient.newBuilder().build()
     val request = HttpRequest.newBuilder()
@@ -153,15 +142,4 @@ fun sendGetRequest(url: String): String {
         .build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     return response.body()
-}
-
-fun showGenericError(title: String, message: String, project: Project) {
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        title,
-        message,
-        NotificationType.ERROR
-    )
-
-    Notifications.Bus.notify(errNotification, project)
 }

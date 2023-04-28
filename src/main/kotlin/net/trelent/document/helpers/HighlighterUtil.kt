@@ -24,14 +24,21 @@ fun getHighlights(editor: Editor, functions: List<Function>): ArrayList<RangeHig
 
         ApplicationManager.getApplication().runReadAction{
             try{
+                //Get function offsets
                 val start = function.offsets[0]
                 val end = function.offsets[1]
 
+                //Ensure that the offsets are within the range of the document (Prevents exception)
                 if(editor.document.text.length >= end && editor.document.text.length > start){
                     ApplicationManager.getApplication().runWriteAction{
                         val attributesKey =
                             TextAttributesKey.createTextAttributesKey("TRELENT_HIGHLIGHT")
-                        val highlighter = editor.markupModel.addRangeHighlighter( start, end, getLayer(DEFAULT_LAYER, 10), attributesKey.defaultAttributes, HighlighterTargetArea.LINES_IN_RANGE)
+
+                        val highlighter = editor.markupModel.addRangeHighlighter( start,
+                            end,
+                            getLayer(DEFAULT_LAYER, 10),
+                            attributesKey.defaultAttributes,
+                            HighlighterTargetArea.LINES_IN_RANGE)
                         highlighter.errorStripeTooltip = "Trelent: Outdated docstring"
                         highlighters.add(highlighter)
                     }
