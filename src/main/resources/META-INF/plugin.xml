@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>net.trelent.document</id>
     <name>Trelent - AI Docstrings on Demand</name>
-    <version>1.8.8</version>
+    <version>1.8.9</version>
     <vendor email="contact@trelent.net" url="https://trelent.net">Trelent</vendor>
     <description>
         <![CDATA[
