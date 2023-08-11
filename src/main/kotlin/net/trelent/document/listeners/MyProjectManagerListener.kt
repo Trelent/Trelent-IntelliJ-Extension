@@ -4,17 +4,15 @@ import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
-import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 import com.jetbrains.rd.util.printlnError
 import net.trelent.document.helpers.getLatestVersion
-import net.trelent.document.services.MyProjectService
 
 internal class MyProjectManagerListener : ProjectManagerListener {
     override fun projectOpened(project: Project) {
-        project.service<MyProjectService>()
+
 
         // Check if there is a new version available
         var currentVersion = "1.8.7"

@@ -1,0 +1,11 @@
+<?xml version='1.0'?>
+<list>
+    <option name="TRELENT_HIGHLIGHT">
+        <value>
+            <option name="FOREGROUND"/>
+            <option name="BACKGROUND" value="63B9D611"/>
+            <option name="EFFECT_COLOR"/>
+            <option name="ERROR_STRIPE_COLOR" value="63B9D611"/>
+        </value>
+    </option>
+</list>

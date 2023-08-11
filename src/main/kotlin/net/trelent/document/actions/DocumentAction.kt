@@ -8,28 +8,15 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.StatusBar
-import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.WindowManager
-import com.intellij.util.castSafelyTo
 import com.jetbrains.rd.util.printlnError
-import net.trelent.document.actions.notifications.LoginNotificationAction
-import net.trelent.document.actions.notifications.SignupNotificationAction
-import net.trelent.document.actions.notifications.UpgradeLearnNotificationAction
-import net.trelent.document.actions.notifications.UpgradeNotificationAction
 import net.trelent.document.helpers.*
 import net.trelent.document.helpers.Function
 import net.trelent.document.settings.TrelentSettingsState
-import net.trelent.document.widgets.PercentDocumented.PercentDocumentedWidget
 import org.jetbrains.annotations.NotNull
 
 class DocumentAction : AnAction() {
@@ -41,8 +28,6 @@ class DocumentAction : AnAction() {
     override fun actionPerformed(@NotNull e: AnActionEvent) {
 
         try {
-
-
             // Get the open project and editor, if there is one
             val project: Project = e.getRequiredData(CommonDataKeys.PROJECT)
             val editor: Editor? = e.getData(CommonDataKeys.EDITOR)
@@ -57,7 +42,6 @@ class DocumentAction : AnAction() {
             // Get the editor's contents, language, and cursor
             val document: Document = editor.document
             val cursor: Caret = editor.caretModel.currentCaret
-            val sourceCode = document.text
             val file = FileEditorManager.getInstance(project).selectedFiles[0]
             var language = getExtensionLanguage(file.extension!!)!!
 
@@ -73,127 +57,23 @@ class DocumentAction : AnAction() {
                 return
             }
 
-            val task = object : Task.Backgroundable(project, "Writing docstring") {
-                override fun run(indicator: ProgressIndicator) {
-                    indicator.text = "Writing docstring..."
-                    indicator.isIndeterminate = true
-                    val parsedFunctions = parseFunctions(
-                        language,
-                        sourceCode
-                    )
+            val parsedFunctions = parseDocument(document, project);
 
-                    var offset = 0
-                    ApplicationManager.getApplication().runReadAction {
-                        offset = cursor.offset
-                    }
-
-                    val currentFunction = getCurrentFunction(parsedFunctions, offset)
-                    if (currentFunction == null) {
-                        showError(
-                            "Your cursor is not inside a valid function. Please click inside the function body if you have not already.",
-                            project
-                        )
-                        return
-                    }
-
-                    // We got the current function!
-                    val funcName = currentFunction.name
-                    val funcParams = currentFunction.params
-                    val funcText = currentFunction.text
-
-                    //FIXME: Remove this when typescript support added in backend
-                    if(language == "typescript"){
-                        language = "javascript"
-                    }
-
-                    // Get the docstring format
-                    val settings = TrelentSettingsState.getInstance()
-                    val format = getFormat(language, settings)
-
-                    // Request a docstring
-                    val docstring = getDocstring(
-                        format,
-                        language,
-                        funcName,
-                        funcParams,
-                        "ext-intellij",
-                        funcText,
-                        userId
-                    )
-
-                    if (!docstring.successful) {
-                        val errorType = docstring.error_type
-
-                        if (errorType == null) {
-                            showError(docstring.error, project)
-                            return
-                        }
-
-                        when (errorType) {
-                            "exceeded_anonymous_quota" -> {
-                                showAnonymousUsageError(
-                                    "Please sign up for a free account to get an extra 50 docs/month. You've hit your anonymous usage limit!",
-                                    project
-                                )
-                            }
-
-                            "exceeded_free_quota" -> {
-                                showFreeUsageError(
-                                    "You have reached your usage limit. Please log in to Trelent to continue.",
-                                    project
-                                )
-                            }
-
-                            "exceeded_paid_quota" -> {
-                                showPaidUsageError(
-                                    "You have reached your usage limit. Please log in to Trelent to continue.",
-                                    project
-                                )
-                            }
-
-                            else -> {
-                                showError(docstring.error, project)
-                            }
-                        }
-
-                        return
-                    }
-
-                    // Get docstring and related metadata
-                    val docStringPoint = currentFunction.docstring_point
-                    val docStringColumn = docStringPoint[1]
-                    val docStringPosition = currentFunction.docstring_offset
-
-
-
-
-                    val docstringLiteral = docstring.data?.docstring!!.split("\n")
-                    val docstringFirstLine = docstringLiteral[0]
-                    val restOfDocstring = docstringLiteral.subList(1, docstringLiteral.size).joinToString("\n")
-
-                    val docstringText =
-                        docstringFirstLine + ("\n" + restOfDocstring + "\n").prependIndent(" ".repeat(docStringColumn))
-                            .replaceFirst("^\\s++", "")
-
-                    // Insert the docstring
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        document.insertString(docStringPosition, docstringText)
-                    }
-
-                    // Update docs progress
-                    val statusBar: StatusBar = WindowManager.getInstance().getStatusBar(project)
-                    val widget: StatusBarWidget? = statusBar.getWidget(PercentDocumentedWidget.WIDGET_ID)
-                    if(widget != null) {
-                        widget.castSafelyTo<PercentDocumentedWidget>()?.externalRefresh(editor, language)
-                    }
-                    else {
-                        println("Could not locate widget.")
-                    }
-                    println(widget == null)
-
-                }
+            var offset = 0
+            ApplicationManager.getApplication().runReadAction {
+                offset = cursor.offset
             }
-            ProgressManager.getInstance().run(task)
+
+            val currentFunction = getCurrentFunction(parsedFunctions, offset)
+            if (currentFunction == null) {
+                showError(
+                    "Your cursor is not inside a valid function. Please click inside the function body if you have not already.",
+                    project
+                )
+                return
+            }
+
+            writeDocstringsFromFunctions(listOf(currentFunction), editor, project);
         }
         catch(e: Exception){
             printlnError("Error parsing: ${e.stackTraceToString()}")
@@ -219,8 +99,7 @@ class DocumentAction : AnAction() {
 
 }
 
-fun showError(message: String, project: Project)
-{
+fun showError(message: String, project: Project) {
     val errNotification = Notification(
         "Trelent Error Notification Group",
         "Error writing docstring",
@@ -230,66 +109,7 @@ fun showError(message: String, project: Project)
     Notifications.Bus.notify(errNotification, project)
 }
 
-fun showAnonymousUsageError(message: String, project: Project)
-{
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        "Usage limit exceeded",
-        message,
-        NotificationType.ERROR
-    )
-
-    // Add login and signup buttons to the notification
-    val loginAction = LoginNotificationAction("Login")
-    val signupAction = SignupNotificationAction("Sign up")
-
-    errNotification.addAction(loginAction)
-    errNotification.addAction(signupAction)
-
-    Notifications.Bus.notify(errNotification, project)
-}
-
-fun showFreeUsageError(message: String, project: Project)
-{
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        "Usage limit exceeded",
-        message,
-        NotificationType.ERROR
-    )
-
-    // Add login and signup buttons to the notification
-
-    val upgradeAction = UpgradeNotificationAction("Upgrade")
-    val upgradeLearnAction = UpgradeLearnNotificationAction("Learn More")
-
-    errNotification.addAction(upgradeAction)
-    errNotification.addAction(upgradeLearnAction)
-
-    Notifications.Bus.notify(errNotification, project)
-}
-
-fun showPaidUsageError(message: String, project: Project)
-{
-    val errNotification = Notification(
-        "Trelent Error Notification Group",
-        "Usage limit exceeded",
-        message,
-        NotificationType.ERROR
-    )
-
-    // Add login and signup buttons to the notification
-    /*
-    val contactAction = ContactNotificationAction("Contact Us")
-
-    errNotification.addAction(contactAction)
-
-     */
-
-    Notifications.Bus.notify(errNotification, project)
-}
-
-fun getFormat(language: String, settings: TrelentSettingsState): String
+fun getFormat(language: String, settings: TrelentSettingsState.TrelentSettings): String
 {
     return when (language) {
         "csharp" -> {

@@ -11,13 +11,6 @@ import javax.swing.JPanel
  * Supports creating and managing a [JPanel] for the Trelent Settings Dialog.
  */
 class TrelentSettingsComponent {
-    /*
-    private var formats = mapOf(
-        "csharp" to arrayOf("xml"),
-        "java" to arrayOf("javadoc"),
-        "javascript" to arrayOf("jsdoc"),
-        "python" to arrayOf("rest", "google", "numpy"),
-    )*/
 
     private val myMainPanel: JPanel
 
@@ -79,4 +72,5 @@ class TrelentSettingsComponent {
     fun setPythonFormat(@NotNull newText: String?) {
         pythonFormat.setSelectedValue(newText, true)
     }
+
 }

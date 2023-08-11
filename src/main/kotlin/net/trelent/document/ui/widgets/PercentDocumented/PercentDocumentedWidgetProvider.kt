@@ -1,4 +1,4 @@
-package net.trelent.document.widgets.PercentDocumented
+package net.trelent.document.ui.widgets.PercentDocumented
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer

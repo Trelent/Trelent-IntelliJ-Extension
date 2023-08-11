@@ -9,7 +9,7 @@ plugins {
     // Kotlin support + multiplatform serialization
     id("org.jetbrains.kotlin.jvm") version "1.6.10"
     // Gradle IntelliJ Plugin
-    id("org.jetbrains.intellij") version "1.13.1"
+    id("org.jetbrains.intellij") version "1.13.3"
     // Gradle Changelog Plugin
     id("org.jetbrains.changelog") version "1.3.1"
     // Gradle Qodana Plugin
@@ -22,6 +22,11 @@ version = properties("pluginVersion")
 // Configure project's dependencies
 repositories {
     mavenCentral()
+}
+
+dependencies{
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.4")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
 }
 
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
