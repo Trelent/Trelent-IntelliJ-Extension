@@ -32,6 +32,6 @@ If you have any other suggestions we would love to hear from you at [contact@tre
 "This thing is crazy! For anyone programming in Python I would recommend giving it a look." - Wyatt, Student
 
 ### Data Policy
-By using Trelent you understand that we may store your data in order to improve future versions of our service. We may also share certain data with partners to provide our services (eg. server hosting). We do not sell your information to any third parties. Please [contact us](mailto:contact@trelent.net) for more information.
+By using Trelent you understand that we may store your data, including code sent to the service, in order to improve future versions of our service. We do not sell your information to any third parties. Please [contact us](mailto:contact@trelent.net) for more information.
 
 <!-- Plugin description end -->
