@@ -20,7 +20,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.trelent.document.helpers.Function
 import net.trelent.document.helpers.parseDocument
-import org.apache.xmlbeans.impl.common.Levenshtein
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -181,7 +180,7 @@ class ChangeDetectionService: Disposable{
         }
 
         fun compareFunctions(fun1: Function, fun2: Function): Int {
-            return Levenshtein.distance(fun1.body, fun2.body);
+            return levenshteinDistance(fun1.body, fun2.body);
         }
 
         idMatching.forEach{
@@ -324,6 +323,26 @@ class ChangeDetectionService: Disposable{
     }
 
     override fun dispose() {
+    }
+
+    private fun levenshteinDistance(str1: String, str2: String): Int {
+        val lenStr1 = str1.length
+        val lenStr2 = str2.length
+
+        val dp = Array(lenStr1 + 1) { IntArray(lenStr2 + 1) }
+
+        for (i in 0..lenStr1) {
+            for (j in 0..lenStr2) {
+                when {
+                    i == 0 -> dp[i][j] = j
+                    j == 0 -> dp[i][j] = i
+                    str1[i - 1] == str2[j - 1] -> dp[i][j] = dp[i - 1][j - 1]
+                    else -> dp[i][j] = 1 + minOf(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+                }
+            }
+        }
+        println("Dist is ${dp[lenStr1][lenStr2]}");
+        return dp[lenStr1][lenStr2]
     }
 
 
