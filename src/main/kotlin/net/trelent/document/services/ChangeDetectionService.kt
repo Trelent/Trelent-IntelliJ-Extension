@@ -3,7 +3,6 @@ package net.trelent.document.services
 import com.intellij.AppTopics
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
@@ -11,9 +10,7 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.ProjectLocator
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -35,7 +32,7 @@ class ChangeDetectionService: Disposable{
         }
 
         fun getDocID(doc: Document): String {
-            val input = FileDocumentManager.getInstance().getFile(doc)?.path
+            val input = FileDocumentManager.getInstance().getFile(doc)?.path;
             val md = MessageDigest.getInstance("MD5")
             return BigInteger(1, md.digest(input?.toByteArray())).toString(16).padStart(32, '0')
         }
